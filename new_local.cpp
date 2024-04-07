@@ -14,10 +14,8 @@
 
 using namespace llvm;
 
-bool runOnBasicBlock(BasicBlock &B) {
 
-
-bool AlgebricIdentity(){
+bool AlgebricIdentity(BasicBlock &B){
     Value *op1,*op2;
     ConstantInt *cost1, *cost2;
     //prendo tutte le istruzioni e controllo che queste istruzioni siano somme oppure moltiplicazioni
@@ -71,7 +69,113 @@ se la costante è uguale a 0 nel caso dell'add invece che la costante sia uguale
     }    
     return true;
   }
+
+Value* findOperator(BasicBlock::iterator sottrazione , BasicBlock::iterator primaIstruzione , Value* var , const llvm::APInt costanteSub ){  
+
+    // Itera le istruzioni partendo dalla sottrazione e arriva fino all'inizio (primaIstruzione)               // TO-DO : migliorare ciclo
+    BasicBlock::iterator it = sottrazione;
+    ConstantInt* C0,*C1;
+    do{
+        if(it == primaIstruzione)
+            break;
+        it--;
+        
+        Instruction *sub = dyn_cast<Instruction>(var);
+        Instruction *instruction = &(*it);
+
+        //Controllo se il value dell'operazione che sto analizzando è uguale al value del sottrazione          //TO-DO : trovare un altro metodo per confrontare
+        if( sub->getOperand(0) == instruction->getOperand(0) && sub->getOperand(1) == instruction->getOperand(1)) {
+            outs()<<"Ho trovato un istruzione con il Value che è un buon candidato ( istr : "<<*instruction<<" )\n";
+            C0 = dyn_cast<ConstantInt>(instruction->getOperand(0));
+            C1 = dyn_cast<ConstantInt>(instruction->getOperand(1));
+            if ( C0 != NULL ){
+                const llvm::APInt costanteAdd = C0->getValue();
+                outs()<<"Costante trovata! : "<<costanteAdd<<"\n";
+                if(costanteAdd.eq(costanteSub)){
+                    outs()<<"Costante uguale a quella della sottrazione!\n";
+                    return instruction->getOperand(1);
+                }
+            }else if(C1 != NULL){
+                const llvm::APInt costanteAdd = C1->getValue();
+                outs()<<"Costante trovata! : "<<costanteAdd<<"\n";
+                if(costanteAdd.eq(costanteSub)){
+                    outs()<<"Costante uguale a quella della sottrazione! : \n";
+                    return instruction->getOperand(0);
+                }
+            }else{
+                outs()<<"Nessuna costante trovata!\n";
+            }
+        }
+    }while(true);
+
+    return NULL;
+
+}
+
+
+void multi_instr_opt(BasicBlock &B){
+    unsigned cont = 0;
+    std::vector<Instruction*> toDelete;  
     
+    //Itera tutte le istruzioni
+    for(auto iter_i = B.begin() ; iter_i != B.end() ; ++iter_i){
+        cont++;
+        Instruction &I = *iter_i;
+        
+        //Controllo se l'istruzione è una sottrazione
+        if(I.isBinaryOp() && I.getOpcode() == Instruction::Sub) {
+
+            BinaryOperator *sub = dyn_cast<BinaryOperator>(&I);
+            outs()<<"("<<*sub<<")" <<" è una sottrazione\n";
+            
+            Value *op_0 = sub->getOperand(0);
+            Value *op_1 = sub->getOperand(1);
+
+            ConstantInt *C;
+            Value *variabile;
+            if( (C = dyn_cast<ConstantInt>(op_1)) ) {
+                variabile = op_0;
+            }else if( (C = dyn_cast<ConstantInt>(op_0)) ){
+                variabile = op_1;
+            }
+            
+            //Controllo se ho trovato una costante
+            if(C){
+                const llvm::APInt costanteIntera = C->getValue();
+                Value* new_value = findOperator(iter_i , B.begin() , variabile , costanteIntera);
+                if(new_value){  // Controllo se ho trovato un addizione con le caratteristiche desiderate
+                    outs() << "Nuovo valore che devo mettere  c = ... <----- = {"<<*new_value<<"} \n";
+                    I.replaceAllUsesWith(new_value);
+                    toDelete.push_back(&I);
+                }else{
+                    outs()<< "Non ho trovato nessuna <Add> con le caratteristiche adatte!\n";
+                }
+            }else{
+                outs()<<"La seguente sottrazione NON ha una costante intera\n\n";
+            }
+            outs()<<"\n\n";
+        }
+        
+        
+    }
+
+    //Cancellazione di tutte le istruzioni inutili
+    for (auto& element : toDelete) {
+        outs()<<"Cancello la seguente istruzione : "<<*element<<"\n";
+        element->eraseFromParent();
+    }
+
+
+    //Debug
+    outs() << "\nIstruzioni analizzate : "<<cont<<"\n";
+}
+
+
+
+bool runOnBasicBlock(BasicBlock &B) {
+  AlgebricIdentity(B);//chiama l'ottimizzatore del punto 1
+  multi_instr_opt(B);  // chiama l'ottimizatore del punto3
+  return true;
 }
 
 
