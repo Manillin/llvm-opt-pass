@@ -15,6 +15,9 @@
 using namespace llvm;
 
 bool runOnBasicBlock(BasicBlock &B) {
+
+
+bool AlgebricIdentity(){
     Value *op1,*op2;
     ConstantInt *cost1, *cost2;
     //prendo tutte le istruzioni e controllo che queste istruzioni siano somme oppure moltiplicazioni
@@ -68,6 +71,8 @@ se la costante è uguale a 0 nel caso dell'add invece che la costante sia uguale
     }    
     return true;
   }
+    
+}
 
 
 bool runOnFunction(Function &F) {
