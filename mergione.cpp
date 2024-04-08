@@ -14,95 +14,10 @@
 
 using namespace llvm;
 
-bool strengthReduction(Instruction &I)
-{
-    outs() << "called sR fun()\n";
-    if (auto *BinOp = dyn_cast<BinaryOperator>(&I))
-    {
-        outs() << "BinaryOperator read!\n";
-        auto OpCode = BinOp->getOpcode();
-        Value *Op1 = I.getOperand(0);
-        Value *Op2 = I.getOperand(1);
+bool strengthReduction(Instruction &I){  /*CHRISTIAN INSERT CODE HERE */ return true}
 
-        outs() << *Op1 << "\n";
-        outs() << *Op2 << "\n";
 
-        outs() << "Provo swap\n";
-        if (ConstantInt *constInt = dyn_cast<ConstantInt>(Op1))
-            std::swap(Op1, Op2);
-
-        if (!isa<ConstantInt>(Op2))
-        {
-            // Op2 non contiene una costante -> errore
-            return false;
-        }
-
-        outs() << "Assegnamento variabili corretto!\n";
-        ConstantInt *constInt = dyn_cast<ConstantInt>(Op2);
-        // calcolo shift value
-
-        unsigned int shiftValue = constInt->getValue().ceilLogBase2();
-        ConstantInt *shift = ConstantInt::get(constInt->getType(), shiftValue);
-
-        Instruction *newInstruction = nullptr;
-
-        if (OpCode == BinaryOperator::Mul)
-        {
-            outs() << "Caso moltiplicazione\n";
-            Instruction *shiftLeft =
-                BinaryOperator::Create(Instruction::Shl, Op1, shift);
-            shiftLeft->insertAfter(&I);
-            unsigned int operationRest =
-                (1 << shiftValue) - constInt->getValue().getZExtValue();
-            ConstantInt *rest = ConstantInt::get(constInt->getType(), operationRest);
-
-            // analisi del resto
-            outs() << "Analisi resto della moltiplicazione\n";
-
-            if (operationRest == 0)
-            {
-                newInstruction = shiftLeft;
-            }
-            else if (operationRest == 1)
-            {
-                outs() << "Resto pari a 1\n";
-                newInstruction =
-                    BinaryOperator::Create(BinaryOperator::Sub, shiftLeft, Op1);
-                newInstruction->insertAfter(shiftLeft);
-            }
-            else if (operationRest > 1)
-            {
-                outs() << "Resto maggiore di 1\n";
-                Instruction *mulInst =
-                    BinaryOperator::Create(BinaryOperator::Mul, Op1, rest);
-                mulInst->insertAfter(shiftLeft);
-                newInstruction =
-                    BinaryOperator::Create(BinaryOperator::Sub, shiftLeft, mulInst);
-                newInstruction->insertAfter(mulInst);
-            }
-        }
-
-        else if (OpCode == BinaryOperator::UDiv)
-        {
-            if (constInt->getValue().isPowerOf2())
-            {
-                newInstruction = BinaryOperator::Create(Instruction::LShr, Op1, shift);
-                newInstruction->insertAfter(&I);
-            }
-        }
-        outs() << "Raggiunto il fondo\n";
-        if (newInstruction)
-            I.replaceAllUsesWith(newInstruction);
-        return newInstruction;
-    }
-    else
-    {
-        outs() << "Not a binary OP\n";
-        return false;
-    }
-}
-
-bool AlgebricIdentity(BasicBlock &B){
+bool algebricIdentity(BasicBlock &B){
 
     std::vector<Instruction*> toDelete;
     Value *op1,*op2;
@@ -301,17 +216,9 @@ void multi_instr_opt(BasicBlock &B)
 
 bool runOnBasicBlock(BasicBlock &B)
 {
-    //   AlgebricIdentity(B); // chiama l'ottimizzatore del punto 1
-    //   multi_instr_opt(B);  // chiama l'ottimizatore del punto3
-    for (auto &I : B)
-    {
-        outs() << "invocato!\n";
-        if (strengthReduction(I))
-        {
-            outs() << " - dentro if \n";
-            I.eraseFromParent();
-        }
-    }
+    algebricIdentity(B); // chiama l'ottimizzatore del punto 1
+    multi_instr_opt(B);  // chiama l'ottimizatore del punto3
+
     return true;
 }
 

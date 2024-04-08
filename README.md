@@ -117,6 +117,22 @@ define dso_local i32 @foo(i32 noundef %0 ,i32 noundef %1 ) #0 {
 *IR dopo l'ottimizazione:*
 
 ```c++
+
+define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
+  %b = add nsw i32 1, 1
+  %a = add nsw i32 %b, 1
+  %d = mul nsw i32 %b, 4
+  %e = add nsw i32 %b, 3
+  %3 = mul nsw i32 %1, 2
+  %4 = shl i32 %0, 1
+  %5 = sdiv i32 %4, 4
+  %6 = add nsw i32 %3, %5
+  %7 = add nsw i32 %6, 4
+  %8 = add nsw i32 %1, %7
+  ret i32 %3
+}
+
+
 ```
 
 
