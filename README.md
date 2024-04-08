@@ -8,41 +8,37 @@
 `𝑥 × 1 = 1 × 𝑥 ⇒𝑥`
 
 
-- TEST foo.ll modificato , sono state aggiunte somme con 0 e moltipliacazioni per 1 :
- 
-*Foo.ll:*
+*IR iniziale:*
 
 ```c++
 define dso_local i32 @foo(i32 noundef %0 ,i32 noundef %1 ) #0 {
-%3 = add nsw i32 %1, 0      // identità algebrica n + 0
-%4 = mul nsw i32 %3, 2      
-%5 = shl i32 %0, 1
-%6 = sdiv i32 %5, 4
-%7 = mul nsw i32 %4, 1     // identità algebrica  n * 1
-%8 = add nsw i32 %7, %6
-%9 = add nsw i32 %8, 4
-%10 = add nsw i32 %1, %9
-ret  i32 %7
+  %3 = add nsw i32 %1, 0      // identità algebrica n + 0
+  %4 = mul nsw i32 %3, 2      
+  %5 = shl i32 %0, 1
+  %6 = sdiv i32 %5, 4
+  %7 = mul nsw i32 %4, 1     // identità algebrica  n * 1
+  %8 = add nsw i32 %7, %6
+  %9 = add nsw i32 %8, 4
+  %10 = add nsw i32 %1, %9
+  ret  i32 %7
 }
 ```
 
-*Foo ottimizzato:*
+*IR ottimizzato:*
 
 ```c++
-define dso_local i32 @foo(i32 noundef %0 ,i32 noundef %1 ) #0 {
-%3 = add nsw i32 %1, 0    
-%4 = mul nsw i32 %1, 2    // modificato op[0] con %1
-%5 = shl i32 %0, 1
-%6 = sdiv i32 %5, 4
-%7 = mul nsw i32 %4, 1  -->
-%8 = add nsw i32 %4, %6  -->
-%9 = add nsw i32 %8, 4
-%10 = add nsw i32 %1, %9
-ret  i32 %4 -->
+define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
+  ----------------------    // Eliminata istruzione ( %3 = add nsw i32 %1, 0 )
+  %3 = mul nsw i32 %1, 2    // Modificato operando[0]
+  %4 = shl i32 %0, 1
+  %5 = sdiv i32 %4, 4
+  ----------------------    // Eliminata istruzione ( %7 = mul nsw i32 %4, 1 )
+  %6 = add nsw i32 %3, %5
+  %7 = add nsw i32 %6, 4
+  %8 = add nsw i32 %1, %7
+  ret i32 %3                // Modificato indirizzo di ritorno
 }
 ```
- 
- 
 
 •2.StrengthReduction(piùavanzato)
 
