@@ -14,9 +14,6 @@
 
 using namespace llvm;
 
-bool strengthReduction(Instruction &I){  /*CHRISTIAN INSERT CODE HERE */ return true}
-
-
 bool algebricIdentity(BasicBlock &B){
 
     std::vector<Instruction*> toDelete;
