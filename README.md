@@ -45,7 +45,7 @@ define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
 
 `15 × 𝑥 = 𝑥 × 15 ⇒ (𝑥 ≪ 4) – x y = x / 8 ⇒ y = x >> 3`
 
-<br><br>
+
 
 • 3.Multi-InstructionOptimization
 
