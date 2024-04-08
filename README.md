@@ -45,6 +45,8 @@ ret  i32 %4 -->
 }
 ```
 
+tedt
+
 ## 2.StrengthReduction
 
 $$
@@ -130,4 +132,60 @@ define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
   %4 = add nsw i32 %b, 3    // sostituito %c con %b
   ret i32 %4
 }
+```
+
+## Summary ( all optimizations in one IR code)
+
+_IR iniziale:_
+
+```c++
+define dso_local i32 @foo(i32 noundef %0 ,i32 noundef %1 ) #0 {
+  %b = add nsw i32 1  , 1
+  %a = add nsw i32 %b , 1
+  %c = sub nsw i32 %a , 1     // sottrazione candidata
+  %d = mul nsw i32 %c , 4
+  %e = add nsw i32 %c , 3
+  %3 = add nsw i32 %1, 0      // identità algebrica n + 0
+  %4 = mul nsw i32 %3, 2
+  %5 = shl i32 %0, 1
+  %6 = sdiv i32 %5, 4
+  %7 = mul nsw i32 %4, 1     // identità algebrica  n * 1
+  %8 = add nsw i32 %7, %6
+  %9 = add nsw i32 %8, 4
+  %10 = add nsw i32 %1, %9
+
+  %11 = mul nsw i32 %0, 8
+  %12 = add nsw i32 %11, 1
+  %13 = udiv nsw i32 %11, 32
+  %14 = add nsw i32 %4, 1
+  %15 = mul i32 15, %0
+
+  ret  i32 %15
+}
+```
+
+_IR dopo l'ottimizazione:_
+
+```c++
+
+define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
+  %b = add nsw i32 1, 1
+  %a = add nsw i32 %b, 1
+  %d = mul nsw i32 %b, 4
+  %e = add nsw i32 %b, 3
+  %3 = mul nsw i32 %1, 2
+  %4 = shl i32 %0, 1
+  %5 = sdiv i32 %4, 4
+  %6 = add nsw i32 %3, %5
+  %7 = add nsw i32 %6, 4
+  %8 = add nsw i32 %1, %7
+  %9 = shl nsw i32 %0,3
+  %10 = add nsw i32 %2, 1
+  %11 = lshr nsw i32 %2, 5
+  %12 = shl nsw i23 %0, 4
+  %13 = sub nsw i32 %12, %0
+  ret i32 %13
+}
+
+
 ```
