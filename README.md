@@ -58,7 +58,7 @@ $$
 _IR Iniziale_:
 
 ```llvm
-define i32 @test2(i32 noundef %0) {
+define i32 @testSR(i32 noundef %0) {
   %2 = mul i32 %0, 8
   %3 = add i32 %2, 1
   %4 = mul i32 8, %0
@@ -75,14 +75,15 @@ _IR dopo l'ottimizzazione:_
 ; ModuleID = 'basic_sr.bc'
 source_filename = "TEST/basic_sr.ll"
 
-define i32 @test2(i32 noundef %0) {
+define i32 @testSR(i32 noundef %0) {
   %2 = shl i32 %0, 3
   %3 = add i32 %2, 1
   %4 = shl i32 %0, 3
-  %5 = add i32 %4, 1
-  %6 = shl i32 %0, 4
-  %7 = sub i32 %6, %0
-  ret i32 %7
+  %5 = lshr i32 %2, 5
+  %6 = add i32 %4, 1
+  %7 = shl i32 %0, 4
+  %8 = sub i32 %7, %0
+  ret i32 %8
 }
 ```
 
