@@ -18,7 +18,7 @@ Foo.ll
 ```llvm
 define dso_local i32 @foo(i32 noundef %0 ,i32 noundef %1 ) #0 {
   %3 = add nsw i32 %1, 0      ; identità algebrica n + 0
-  %4 = mul nsw i32 %3, 2      
+  %4 = mul nsw i32 %3, 2
   %5 = shl i32 %0, 1
   %6 = sdiv i32 %5, 4
   %7 = mul nsw i32 %4, 1      ; identità algebrica  n * 1
@@ -44,7 +44,6 @@ define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
   ret i32 %3                ; Modificato indirizzo di ritorno
 }
 ```
-
 
 ## 2.StrengthReduction
 
@@ -154,7 +153,7 @@ define dso_local i32 @foo(i32 noundef %0 ,i32 noundef %1 ) #0 {
   %10 = add nsw i32 %1, %9
   %11 = mul nsw i32 %0, 8       ;moltiplicazione per multiplo
   %12 = add nsw i32 %11, 1
-  %13 = udiv nsw i32 %11, 32    ;divisione per multiplo
+  %13 = udiv i32 %11, 32    ;divisione per multiplo
   %14 = add nsw i32 %4, 1
   %15 = mul i32 15, %0          ;moltiplicazione per multiplo adiacente
 
@@ -166,24 +165,26 @@ _IR dopo l'ottimizazione:_
 
 ```llvm
 
+; ModuleID = 'basic_sr.bc'
+source_filename = "TEST/basic_sr.ll"
+
 define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
   %b = add nsw i32 1, 1
   %a = add nsw i32 %b, 1
-  %d = mul nsw i32 %b, 4
+  %3 = shl i32 %b, 2
   %e = add nsw i32 %b, 3
-  %3 = mul nsw i32 %1, 2
-  %4 = shl i32 %0, 1
-  %5 = sdiv i32 %4, 4
-  %6 = add nsw i32 %3, %5
-  %7 = add nsw i32 %6, 4
-  %8 = add nsw i32 %1, %7
-  %9 = shl nsw i32 %0,3
-  %10 = add nsw i32 %2, 1
-  %11 = lshr nsw i32 %2, 5
-  %12 = shl nsw i23 %0, 4
-  %13 = sub nsw i32 %12, %0
-  ret i32 %13
+  %4 = shl i32 %1, 1
+  %5 = shl i32 %0, 1
+  %6 = sdiv i32 %5, 4
+  %7 = add nsw i32 %4, %6
+  %8 = add nsw i32 %7, 4
+  %9 = add nsw i32 %1, %8
+  %10 = shl i32 %0, 3
+  %11 = add nsw i32 %10, 1
+  %12 = lshr i32 %10, 5
+  %13 = add nsw i32 %4, 1
+  %14 = shl i32 %0, 4
+  %15 = sub i32 %14, %0
+  ret i32 %15
 }
-
-
 ```
