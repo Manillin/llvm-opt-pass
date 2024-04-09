@@ -13,7 +13,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// NOTE: NO INCLUDE GUARD DESIRED!
+// NOTE: NO INCLUDE GUARD DESIRED!!
 
 #ifndef MODULE_ANALYSIS
 #define MODULE_ANALYSIS(NAME, CREATE_PASS)
