@@ -7,14 +7,15 @@
 
 ## Formalizzazione
 
-| Parameter               |                         Value                        |
-|-------------------------|:----------------------------------------------------:|
-| Domain                  |            Sets of expressions               |
-| Direction               |  Forward                                |
-| Transfer function       |                       |
-| Meet operation (∧)      |                                   |
-| Boundary condition      |                                       |
-| Initial interior points |                         |
+| Parameter               | Value                                                            |
+|-------------------------|------------------------------------------------------------------|
+| Domain                  | Sets of BasicBlocks                                              |
+| Direction               | <b>Forward:</b> <br>Out[B] = fB(In[B])<br>In[b] = ∩ Out[pred(B)] |
+| Transfer function       | fB(In[B]) = Gen[B] U In[B]                                       |
+| Meet Operation(∧)       | Intersezione(∩)                                                  |
+| Boundary Condition      | Out[Entry] = {Entry}                                             |
+| Initial Interior points | Out[B] = "Universal Set"                                         |
+
 
 
 ## Iterazioni algoritmo
