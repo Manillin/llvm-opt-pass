@@ -21,6 +21,18 @@
 ## Iterazioni algoritmo
 
 
+### Gen and Kill table
+
+|     | Gen   | Kill |
+|-----|-------|------|
+| BB1 | 1,2,3 | 1    |
+| BB2 | ...   | ...  |
+| BB3 | ...   | ...  |
+| BB4 | ...   | ...  |
+| BB5 | ...   | ...  |
+| BB6 | ...   | ...  |
+
+### Iterations
 
 |     | Iterazione1 | Iterazione1 |     | Iterazione2 | Iterazione2 |
 |-----|-------------|-------------|-----|-------------|-------------|
