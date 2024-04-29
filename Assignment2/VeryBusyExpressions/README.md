@@ -10,7 +10,7 @@
 | Direction               | Backward: <br> in[b] = f_b(out[b]) <br> out[b] = $\wedge$ in[succ(b)]  |   
 | Transfer function       | f_b(x) = $Gen_b$ $\cup$ $(out_b – Kill_b)$                             |
 | Meet operation (∧)      | $\cap$                                                                 |
-| Boundary condition      | in[exit] = \emptyset$                                                  |
+| Boundary condition      | in[exit] = $\emptyset$                                                  |
 | Initial interior points | in[b] = U                                                              |
 
 
