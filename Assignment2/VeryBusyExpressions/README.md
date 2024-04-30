@@ -7,7 +7,11 @@
 | Parameter               |                         Value                                          |
 |-------------------------|:-----------------------------------------------------------------------|
 | Domain                  | Sets of expressions                                                    |
+<<<<<<< HEAD
 | Direction               | Backward: <br> in[b] = f_b(out[b]) <br> out[b] = $\wedge$ in[succ(b)]  |   
+=======
+| Direction               | Backward: <br> in[b] = f_b(out[b]) <br> out[b] = $\wedge$ in[succ(b)]  |
+>>>>>>> luca
 | Transfer function       | f_b(x) = $Gen_b$ $\cup$ $(out_b – Kill_b)$                             |
 | Meet operation (∧)      | $\cap$                                                                 |
 | Boundary condition      | in[exit] = $\emptyset$                                                  |
