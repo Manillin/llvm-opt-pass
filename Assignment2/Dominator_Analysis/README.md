@@ -23,27 +23,46 @@
 
 ### Gen and Kill table
 
-|     | Gen   | Kill |
-|-----|-------|------|
-| BB-A |    -    | -  |
-| BB-B | A,B     | -  |
-| BB-C | A,C     | -  |
-| BB-D | A,C,D   | -  |
-| BB-E | A,C,E   | -  |
-| BB-F | A,C,F   | -  |
-| BB-F | A,G     | -  |
+|  BasicBlock | Gen  | Kill |
+|:---:|:-----:|:----:|
+| A | A  |   -  |
+| B | B  |   -  |
+| C | C  |   -  |
+| D | D  |   -  |
+| E | E  |   -  |
+| F | F  |   -  |
+| G | G  |   -  |
 
 ### Iterations
 
-|     | Iterazione1 | Iterazione1 |     | Iterazione2 | Iterazione2 |
-|-----|-------------|-------------|-----|-------------|-------------|
-|     | IN[b]       | Out[b]      |     | IN[b]       | Out[b]      |
-| BB1 | ...         | ...         |     | ...         | ...         |
-| BB2 | ...         | ...         |     | ...         | ...         |
-| BB2 | ...         | ...         |     | ...         | ...         |
-| BB3 | ...         | ...         |     | ...         | ...         |
-| BB4 | ...         | ...         |     | ...         | ...         |
-| BB5 | ...         | ...         |     | ...         | ...         |
-| BB6 | ...         | ...         |     | ...         | ...         |
-| BB7 | ...         | ...         |     | ...         | ...         |
-| BB8 | ...         | ...         |     | ...         | ...         |
+⚬ From Iteration1 to Iteration2 there are no difference
+
+|            | Iterazione1 | Iterazione1 |   | Iterazione2 | Iterazione2 |
+|:----------:|:-----------:|:-----------:|:---:|:-----------:|:-----------:|
+| BasicBlock | IN[B]       | OUT[B]      |   | IN[B]       | OUT[B]      |
+| A          | ∅           | A           |   | ∅           | A           |
+| B          | A           | A,B         |   | A           | A,B         |
+| C          | A           | A,C         |   | A           | A,C         |
+| D          | A,C         | A,C,D       |   | A,C         | A,C,D       |
+| E          | A,C         | A.C,E       |   | A,C         | A.C,E       |
+| F          | A,C         | A,C,F       |   | A,C         | A,C,F       |
+| G          | A           | A,G         |   | A           | A,G         |
+
+
+### Iterations - bit vector
+
+⚬ We can also rappresent the iteration with a bit vector, the vector size is equal to |BasicBlocks| (in this examples |BB| = 7).  
+&emsp; Each position rappresents one BasicBlock and if it is set to 1 it means it is include in the set.
+
+
+|            | Iterazione1     | Iterazione1     |   | Iterazione2     | Iterazione2     |
+|:----------:|:---------------:|:---------------:|:---:|:---------------:|:---------------:|
+| BasicBlock | IN[B]           | OUT[B]          |   | IN[B]           | OUT[B]          |
+| A          | <0,0,0,0,0,0,0> | <1,0,0,0,0,0,0> |   | <0,0,0,0,0,0,0> | <1,0,0,0,0,0,0> |
+| B          | <1,0,0,0,0,0,0> | <1,1,0,0,0,0,0> |   | <1,0,0,0,0,0,0> | <1,1,0,0,0,0,0> |
+| C          | <1,0,0,0,0,0,0> | <1,0,1,0,0,0,0> |   | <1,0,0,0,0,0,0> | <1,0,1,0,0,0,0> |
+| D          | <1,0,1,0,0,0,0> | <1,0,1,1,0,0,0> |   | <1,0,1,0,0,0,0> | <1,0,1,1,0,0,0> |
+| E          | <1,0,1,0,0,0,0> | <1,0,1,0,1,0,0> |   | <1,0,1,0,0,0,0> | <1,0,1,0,1,0,0> |
+| F          | <1,0,1,0,0,0,0> | <1,0,1,0,0,1,0> |   | <1,0,1,0,0,0,0> | <1,0,1,0,0,1,0> |
+| G          | <1,0,0,0,0,0,0> | <1,0,0,0,0,0,1> |   | <1,0,0,0,0,0,0> | <1,0,0,0,0,0,1> |
+
