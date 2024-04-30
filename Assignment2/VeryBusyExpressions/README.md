@@ -1,6 +1,6 @@
 # Very Busy Expressions
 
-![image](/Assignment2/img/VeryBusy.png)
+<img src="../img/VeryBusy.png" width = 25% alt="cfg"></img>
 
 ## 1. Table
 
