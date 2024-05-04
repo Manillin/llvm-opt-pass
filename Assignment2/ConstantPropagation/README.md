@@ -17,14 +17,14 @@
 
 <center>
 
-# Formalizzazione:
+# Framework:
 
 |                           |                        **Constant Propagation**                        |
 | :-----------------------: | :--------------------------------------------------------------------: |
 |          Domain           |                      set of $\lt var, const \gt$                       |
 |         Direction         | Forward:<br>$out[B]=f_B(in[B])$ <br> $in[B]=\wedge\space out[pred(B)]$ |
 |     Transfer Function     |               $f_B(in[B])=gen[B] \cup (in[B] - kill[B])$               |
-| Meet Operation $(\wedge)$ |                  $\cap\space\rightarrow$ Intersezione                  |
+| Meet Operation $(\wedge)$ |                 $\cap\space\rightarrow$ Intersectiton                  |
 |    Boundary Conditions    |                        $out[ENTRY] = \emptyset$                        |
 |  Initial Interior Points  |                             $out[B_i] = U$                             |
 
@@ -45,7 +45,7 @@ for each BB except ENTRY:
     out[B] = U # Universal Set
 
 # Iteration:
-while(changes to ant out[] occur):
+while(changes to any out[] occur):
     for each BB except ENTRY:
         in[B] = ∩(out[p]) for all predecessors p of B
         out[B] = gen[B] U (in[B] - kill[B]) # transfer function
@@ -163,5 +163,7 @@ while(changes to ant out[] occur):
 |   $in[B6]$   | $\\{(a,4),(b,2),(y,8)\\}$ |
 |  $out[B6]$   | $\\{(a,4),(b,2),(y,8)\\}$ |
 |  $in[EXIT]$  | $\\{(a,4),(b,2),(y,8)\\}$ |
+
+No changes were detected, meaning we reached the **point of convergence**, therefore the algorithm stops!
 
 </center>
