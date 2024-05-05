@@ -24,8 +24,8 @@
 |          Domain           |                      set of $\lt var, const \gt$                       |
 |         Direction         | Forward:<br>$out[B]=f_B(in[B])$ <br> $in[B]=\wedge\space out[pred(B)]$ |
 |     Transfer Function     |               $f_B(in[B])=gen[B] \cup (in[B] - kill[B])$               |
-| Meet Operation $(\wedge)$ |                 $\cap\space\rightarrow$ Intersectiton                  |
-|    Boundary Conditions    |                        $out[ENTRY] = \emptyset$                        |
+| Meet Operation $(\wedge)$ |                 $\cap\space\rightarrow$ Intersection            |
+|   Boundary Conditions    |                        $out[ENTRY] = \emptyset$                        |
 |  Initial Interior Points  |                             $out[B_i] = U$                             |
 
 </center>
@@ -73,7 +73,7 @@ while(changes to any out[] occur):
 
 ### Boundary Condition :
 
-|  Flow point  | Data representation |
+|  Basic Block  | Data representation |
 | :----------: | :-----------------: |
 | $out[ENTRY]$ |     $\emptyset$     |
 |   $in[B1]$   |          -          |
@@ -98,7 +98,7 @@ while(changes to any out[] occur):
 
 ### First Iteration:
 
-|  BasicBlock  |                                                                                                Data Output                                                                                                |
+|  Basic Block  |                                                                                                Data Output                                                                                                |
 | :----------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | $out[ENTRY]$ |                                                                                                $\emptyset$                                                                                                |
 |   $in[B1]$   |                                                                          $in[B]=\wedge\space out[pred(B)]\rightarrow \emptyset$                                                                           |
