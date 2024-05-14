@@ -21,17 +21,17 @@
 ```python
 
 #Boundary condition
-in[Exit] = ∅
+out[Entry] = {Entry}
 
 #Initialization for iterative algorithm
 for each basic_block_B other than Exit
-    in[B] = ∅
+    out[B] = "Universal Set"
     
 #Iterate
-while (Changes to any in[] occur):
-    for each basic_block_B other than Exit:
-        out[B] =  (in[s]), for all successors s of B
-        in[B] = fB(out[B]) # trasfer function
+while (Changes to any out[] occur):
+    for each basic_block_B other than Entry:
+        in[B] = ∩ (out[s]), for all predecessor s of B
+        out[B] = fB(in[B]) # trasfer function
 
 # If reached = Convergence
 ```
