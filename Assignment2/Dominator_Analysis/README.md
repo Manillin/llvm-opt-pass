@@ -16,7 +16,25 @@
 | Boundary Condition      | Out[Entry] = {Entry}                                             |
 | Initial Interior points | Out[B] = "Universal Set"                                         |
 
+## Pseudocode
 
+```python
+
+#Boundary condition
+in[Exit] = ∅
+
+#Initialization for iterative algorithm
+for each basic_block_B other than Exit
+    in[B] = ∅
+    
+#Iterate
+while (Changes to any in[] occur):
+    for each basic_block_B other than Exit:
+        out[B] =  (in[s]), for all successors s of B
+        in[B] = fB(out[B]) # trasfer function
+
+# If reached = Convergence
+```
 
 ## Iterazioni algoritmo
 
