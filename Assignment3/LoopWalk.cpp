@@ -1,4 +1,7 @@
 #include "llvm/Transforms/Utils/LoopWalk.h"
+#include "llvm/Analysis/DominanceFrontier.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/PostDominators.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
 #include <llvm/IR/Constants.h>
@@ -57,6 +60,89 @@ bool isLoopInvariantCandidate(
     return (isCostant(Operand) || isDefinedOutside(Operand, L) ||
             I_link != NULL || (loop_invariant_instructions.count(I_link) > 0) ||
             (isa<Argument>(Operand)));
+}
+
+// Trova i blocchi di uscita del ciclo
+std::set<BasicBlock *> find_exit_blocks(Loop &L)
+{
+    std::set<BasicBlock *> exit_blocks;
+    for (BasicBlock *BB : L.blocks())
+    {
+        for (Instruction &I : *BB)
+        {
+            if (BranchInst *BI = dyn_cast<BranchInst>(&I))
+            {
+                for (unsigned i = 0; i < BI->getNumSuccessors(); ++i)
+                {
+                    BasicBlock *succ = BI->getSuccessor(i);
+                    if (!L.contains(succ))
+                    {
+                        exit_blocks.insert(succ);
+                    }
+                }
+            }
+        }
+    }
+    return exit_blocks;
+}
+
+// Trova i blocchi che dominano TUTTE le uscite
+std::set<BasicBlock *> find_exit_dominators(DominatorTree &DT, Loop &L)
+{
+    std::set<BasicBlock *> exit_blocks = find_exit_blocks(L);
+    std::set<BasicBlock *> exit_dominators;
+
+    for (BasicBlock *BB : L.blocks())
+    {
+        bool dominates_all_exits = true;
+
+        for (BasicBlock *exitBlock : exit_blocks)
+        {
+            if (!DT.dominates(BB, exitBlock))
+            {
+                dominates_all_exits = false;
+                break;
+            }
+        }
+        if (dominates_all_exits)
+        {
+            exit_dominators.insert(BB);
+        }
+    }
+    return exit_dominators;
+}
+
+// Controlla se un'istruzione domina TUTTI i suoi usi
+// TODO: NON può essere passata su un'istruzione che non sia binaria (?), aggiungi controlli
+bool instruction_dominates_all_uses(Instruction *I, DominatorTree &DT,
+                                    Loop &L)
+{
+    for (User *U : I->users())
+    {
+        Instruction *userInst = dyn_cast<Instruction>(U);
+        if (userInst && L.contains(userInst->getParent()))
+        {
+            if (!DT.dominates(I, userInst))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// TODO: check se non istruzione binaria
+bool is_dead(Instruction *I, Loop &L)
+{
+    for (User *U : I->users())
+    {
+        Instruction *userInst = dyn_cast<Instruction>(U);
+        if (userInst && !L.contains(userInst->getParent()))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
