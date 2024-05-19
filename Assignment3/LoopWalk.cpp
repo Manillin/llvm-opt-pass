@@ -2,6 +2,7 @@
 #include "llvm/Analysis/DominanceFrontier.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/PostDominators.h"
+#include "llvm/IR/Dominators.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
 #include <llvm/IR/Constants.h>
@@ -114,24 +115,56 @@ std::set<BasicBlock *> find_exit_dominators(DominatorTree &DT, Loop &L)
 }
 
 // Controlla se un'istruzione domina TUTTI i suoi usi
-// TODO: NON può essere passata su un'istruzione che non sia binaria (?),
-// aggiungi controlli
 bool instruction_dominates_all_uses(Instruction *I, DominatorTree &DT,
                                     Loop &L)
 {
   for (User *U : I->users())
   {
-    Instruction *userInst = dyn_cast<Instruction>(U);
-    if (userInst && L.contains(userInst->getParent()))
+    if (Instruction *userInst = dyn_cast<Instruction>(U))
     {
-      if (!DT.dominates(I, userInst))
+
+      // Handling speciale per nodi PHI:
+      if (PHINode *phiNode = dyn_cast<PHINode>(userInst))
       {
-        return false;
+        for (unsigned i = 0; i < phiNode->getNumIncomingValues(); ++i)
+        {
+          // Valutiamo solo casi che contribuiscono al nodo PHI che sono uguali
+          // all'istruzione soggetta al controllo della dominanza:
+          if (phiNode->getIncomingValue(i) == I)
+          {
+            BasicBlock *incomingBlock = phiNode->getIncomingBlock(i);
+            if (!DT.dominates(I->getParent(), incomingBlock))
+            {
+              return false;
+            }
+          }
+        }
+      }
+      else
+      {
+
+        // Istruzione Normale
+        if (L.contains(userInst->getParent()) && !DT.dominates(I, userInst))
+        {
+          return false;
+        }
       }
     }
   }
   return true;
 }
+// bool instruction_dominates_all_uses(Instruction *I, DominatorTree &DT,
+//                                     Loop &L) {
+//   for (User *U : I->users()) {
+//     Instruction *userInst = dyn_cast<Instruction>(U);
+//     if (userInst && L.contains(userInst->getParent())) {
+//       if (!DT.dominates(I, userInst)) {
+//         return false;
+//       }
+//     }
+//   }
+//   return true;
+// }
 
 // TODO: check se non istruzione binaria
 bool is_dead(Instruction *I, Loop &L)
@@ -229,6 +262,8 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
   // prendi i blocchi che dominano tutte le uscite
   std::set<BasicBlock *> exit_dominators = find_exit_dominators(DT, L);
 
+  outs() << "\n\n";
+
   /**
    * @brief Inserimento delle istruzioni candidate alla code motion nella
    * rispettiva struttura dati
@@ -245,6 +280,7 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
       // verifica se istruzione domina tutti i suoi usi nel loop
       if (instruction_dominates_all_uses(inst, DT, L))
       {
+        outs() << "added by dominance: " << *inst << "\n";
         code_motion_instructions.insert(inst);
       }
     }
@@ -252,6 +288,7 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
     // la condizione sopra
     else if (is_dead(inst, L))
     {
+      outs() << "added by deadcode: " << *inst << "\n";
       code_motion_instructions.insert(inst);
     }
   }
@@ -264,6 +301,8 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
 
   outs() << "\nAttempting to move instructions...\n";
   move_to_preheader(&L, code_motion_instructions);
+
+  outs() << "\t\tDEBUG:\n";
 
   return PreservedAnalyses::all();
 }
