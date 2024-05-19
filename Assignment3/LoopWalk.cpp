@@ -6,10 +6,11 @@
 #include "llvm/IR/Instructions.h"
 #include <llvm/IR/Constants.h>
 
+// TODO -> rimuovi commenti con r, prima di consegnare
+
 using namespace llvm;
 
 // sposta istruzioni nel preheader:
-
 void move_to_preheader(Loop *L,
                        std::set<Instruction *> &loop_invariant_instructions)
 {
@@ -30,7 +31,7 @@ bool isDefinedOutside(Value *Operand, Loop &L)
     Instruction *I_temp = dyn_cast<Instruction>(Operand);
     if (I_temp != NULL)
     {
-        return (L.contains(I_temp->getParent()));
+        return !(L.contains(I_temp->getParent()));
     }
     else
     {
@@ -113,7 +114,8 @@ std::set<BasicBlock *> find_exit_dominators(DominatorTree &DT, Loop &L)
 }
 
 // Controlla se un'istruzione domina TUTTI i suoi usi
-// TODO: NON può essere passata su un'istruzione che non sia binaria (?), aggiungi controlli
+// TODO: NON può essere passata su un'istruzione che non sia binaria (?),
+// aggiungi controlli
 bool instruction_dominates_all_uses(Instruction *I, DominatorTree &DT,
                                     Loop &L)
 {
@@ -153,6 +155,7 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
     outs() << "Starting loop programm: \n\n";
 
     std::set<Instruction *> loop_invariant_instructions;
+    std::set<Instruction *> code_motion_instructions;
 
     if (!L.isLoopSimplifyForm())
     {
@@ -168,10 +171,14 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
     outs() << "\nIl loop è in forma Normale e ha un Preheader!\nContinuo...\n";
 
     BasicBlock *head = L.getHeader();
-    Function *F = head->getParent(); // recuperiamo l'handle alla funzione che
-                                     // contiene il Loop
+    // Function *F = head->getParent(); recuperiamo l'handle alla funzione che
+    // contiene il Loop
 
-    // TODO: modificare in forma for(auto *BB: ...)
+    /**
+     * @brief Creazione del set contenente le istruzioni loop independant
+     *
+     * @param BI -> Iteratore dei blocchi che compongono il loop
+     */
     for (auto BI = L.block_begin(); BI != L.block_end(); ++BI)
     {
 
@@ -207,15 +214,53 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
             }
         }
     }
-
+    // debug: stampa le istruzioni loop independant
     outs() << "\nLoop invariant instructions : \n";
     for (const auto &element : loop_invariant_instructions)
     {
         outs() << *element << "\n";
     }
 
+    DominatorTree &DT = LAR.DT;
+
+    // prendi i blocchi che dominano tutte le uscite
+    std::set<BasicBlock *> exit_dominators = find_exit_dominators(DT, L);
+
+    /**
+     * @brief Inserimento delle istruzioni candidate alla code motion nella
+     * rispettiva struttura dati
+     */
+
+    for (Instruction *inst : loop_invariant_instructions)
+    {
+        BasicBlock *inst_bb = inst->getParent(); // r: getParent() restituisce BB
+                                                 // della definizione dell'inst
+
+        // controllo se istruzione è in blocco che domina tutte le uscite
+        if (exit_dominators.count(inst_bb))
+        {
+            // verifica se istruzione domina tutti i suoi usi nel loop
+            if (instruction_dominates_all_uses(inst, DT, L))
+            {
+                code_motion_instructions.insert(inst);
+            }
+        }
+        // controllo se deade code fuori dal loop r: potrebbe essere messa in or con
+        // la condizione sopra
+        else if (is_dead(inst, L))
+        {
+            code_motion_instructions.insert(inst);
+        }
+    }
+
+    outs() << "\nCode Motion Instructions: \n";
+    for (const auto &element : code_motion_instructions)
+    {
+        outs() << *element << "\n";
+    }
+
     outs() << "\nAttempting to move instructions...\n";
-    move_to_preheader(&L, loop_invariant_instructions);
+    move_to_preheader(&L, code_motion_instructions);
 
     return PreservedAnalyses::all();
 }
