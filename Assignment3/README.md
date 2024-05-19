@@ -15,6 +15,13 @@
 
 <img src="img/LICM_mem2reg.png" alt="DU" width=70%></img>
 
+<br><br>
+
+### Control Flow Graph of .ll code (with mem2reg opt) --- [IR style]
+
+<br>
+
+<img src="img/LICM_mem2reg_IR.png" alt="DU" width=45%></img>   
 <br><br><br>
 
 
