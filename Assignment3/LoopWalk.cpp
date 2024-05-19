@@ -260,7 +260,9 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
     }
 
     outs() << "\nAttempting to move instructions...\n";
-    move_to_preheader(&L, code_motion_instructions);
+    // move_to_preheader(&L, code_motion_instructions);
+
+    outs() << "pass terminated \n";
 
     return PreservedAnalyses::all();
 }
