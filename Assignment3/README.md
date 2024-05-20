@@ -75,7 +75,7 @@ int main()
 
 <br>
 
-<img src="img/LICM_mem2reg_IR_highlight.png" alt="IR_highlight" width=70%>
+<img src="img/LICM_mem2reg_IR_highlight.png" alt="IR_highlight" width=90%>
 
 <br><br>
 
