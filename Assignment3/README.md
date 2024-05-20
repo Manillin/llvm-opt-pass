@@ -1,7 +1,12 @@
 # Assignment 3
 
+## Consegna
 
-### Control Flow Graph of .ll code (No mem2reg opt)
+A partire dal codice della esercitazione 4, implementare un passo di Loop-Invariant Code Motion (LICM).
+
+## Rappresentazione grafica del problema
+
+### Control Flow Graph of .ll code (No mem2reg opt)  --- [C style]
 
 <img src="img/LICM_no_mem2reg.png" alt="DU" width=70%></img>  
 
@@ -9,7 +14,7 @@
 
 ---
 
-### Control Flow Graph of .ll code (with mem2reg opt)
+### Control Flow Graph of .ll code (with mem2reg opt)  --- [C style]
 
 <br>
 
@@ -21,13 +26,11 @@
 
 <br>
 
-<img src="img/LICM_mem2reg_IR.png" alt="DU" width=45%></img>   
+<img src="img/LICM_mem2reg_IR.png" alt="DU" width=70%></img>   
 <br><br><br>
 
 
-## Consegna
 
-A partire dal codice della esercitazione 4, implementare un passo di Loop-Invariant Code Motion (LICM).
 
 
 ## Algoritmo per la Code Motion 
@@ -42,9 +45,9 @@ A partire dal codice della esercitazione 4, implementare un passo di Loop-Invari
 
 4. Trovare le <b>uscite del loop</b> (i successori fuori dal loop)
    
-5. Trovare le <b>istruzioni candidate alla code motion</b>:
+5. Trovare le <b>istruzioni candidate alla code motion</b>:              (le condizioni devono essere tutte vere)
    1. Sono loop invariant
-   2. Si trovano in blocchi che dominano tutte le uscite del loop
+   2. Si trovano in blocchi che dominano tutte le uscite del loop <b>OPPURE</b> la variabile definita dall’istruzione è dead all’uscita del loop.
    3. Assegnano un valore a variabili non assegnate altrove nel loop
    4. Si trovano in blocchi che dominano tutti i blocchi nel loop che usano la variabile a cui si sta assegnando un valore
 
