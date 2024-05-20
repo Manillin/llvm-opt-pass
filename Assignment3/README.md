@@ -1,65 +1,94 @@
-# Assignment 3
+# <center> Assignment 3 </center>
 
-## Consegna
+## Consegna:
 
-A partire dal codice della esercitazione 4, implementare un passo di Loop-Invariant Code Motion (LICM).
+A partire dal codice dell'esercitazione 4, implementare un passo di Loop-Invariant Code Motion (LICM).
 
-## Rappresentazione grafica del problema
+### Codice Sorgente:
 
-### Control Flow Graph of .ll code (No mem2reg opt)  --- [C style]
+```c++
+#include <stdio.h>
 
-<img src="img/LICM_no_mem2reg.png" alt="DU" width=70%></img>  
+void foo(int c, int z)
+{
+  int a = 9, h, m = 0, n = 0, q, r = 0, y = 0;
+
+LOOP:
+  z = z + 1;
+  y = c + 3;
+  q = c + 7;
+  if (z < 5)
+  {
+    a = a + 2;
+    h = c + 3;
+  }
+  else
+  {
+    a = a - 1;
+    h = c + 4;
+    if (z >= 10)
+    {
+      goto EXIT;
+    }
+  }
+  m = y + 7;
+  n = h + 2;
+  y = c + 7;
+  r = q + 5;
+  goto LOOP;
+EXIT:
+  printf("%d,%d,%d,%d,%d,%d,%d,%d\n", a, h, m, n, q, r, y, z);
+}
+
+int main()
+{
+  foo(0, 4);
+  foo(0, 12);
+  return 0;
+}
+
+```
+
+<br><br>
+
+## Rappresentazione grafica del problema:
+
+### 1. Control Flow Graph of the source code (No opt passes)
+
+<br>
+
+![ss1](./img/SS1.png)
 
 <br><br>
 
 ---
 
-### Control Flow Graph of .ll code (with mem2reg opt)  --- [C style]
+### 2. Control Flow Graph with `mem2reg` pass invoked
 
 <br>
 
-<img src="img/LICM_mem2reg.png" alt="DU" width=70%></img>
+![](./img/LICM_mem2reg_IR.png)
 
 <br><br>
 
-### Control Flow Graph of .ll code (with mem2reg opt) --- [IR style]
+## Algoritmo per la Code Motion
 
-<br>
-
-<img src="img/LICM_mem2reg_IR.png" alt="DU" width=70%></img>   
-<br><br><br>
-
-
-
-
-
-## Algoritmo per la Code Motion 
-
-• Dato un insieme di nodi in un loop: 
+• Dato un insieme di nodi in un loop:
 
 1. Calcolare le <b>reaching definitions</b>.
 
 2. Trovare le istruzioni <b>loop-invariant</b>.
-   
 3. Calcolare i <b>dominatori</b> (dominance tree)
 
 4. Trovare le <b>uscite del loop</b> (i successori fuori dal loop)
-   
-5. Trovare le <b>istruzioni candidate alla code motion</b>:              (le condizioni devono essere tutte vere)
-   1. Sono loop invariant
-   2. Si trovano in blocchi che dominano tutte le uscite del loop <b>OPPURE</b> la variabile definita dall’istruzione è dead all’uscita del loop.
-   3. Assegnano un valore a variabili non assegnate altrove nel loop
-   4. Si trovano in blocchi che dominano tutti i blocchi nel loop che usano la variabile a cui si sta assegnando un valore
+5. Trovare le <b>istruzioni candidate alla code motion</b>: (le condizioni devono essere tutte vere)
+
+   - Sono loop invariant
+   - Si trovano in blocchi che dominano tutte le uscite del loop <b>OPPURE</b> la variabile definita dall’istruzione è dead all’uscita del loop.
+   - Assegnano un valore a variabili non assegnate altrove nel loop
+   - Si trovano in blocchi che dominano tutti i blocchi nel loop che usano la variabile a cui si sta assegnando un valore
 
 6. Eseguire una ricerca <b>depth-first</b> dei blocchi
 
 7. Spostare l’istruzione candidata nel <b>preheader</b> se tutte le istruzioni
-invarianti da cui questa dipende sono state spostate.
-
-
-
-
-
-
-
-
+   invarianti da cui questa dipende sono state spostate.
