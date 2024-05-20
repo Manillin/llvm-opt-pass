@@ -57,7 +57,7 @@ int main()
 
 <br>
 
-![ss1](./img/SS1.png)
+<img src="img/SS1.png" alt="SS1" width=40%>
 
 <br><br>
 
@@ -68,6 +68,14 @@ int main()
 <br>
 
 ![](./img/LICM_mem2reg_IR.png)
+
+<br><br>
+
+### 3. Control Flow Graph with `mem2reg` pass invoked  (highlight the CM instructions)
+
+<br>
+
+<img src="img/LICM_mem2reg_IR_highlight.png" alt="SS1" width=50%>
 
 <br><br>
 
