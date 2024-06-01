@@ -57,7 +57,7 @@ int main()
 
 <br>
 
-![ss1](./img/SS1.png)
+<img src="img/SS1.png" alt="SS1" width=40%>
 
 <br><br>
 
@@ -71,9 +71,19 @@ int main()
 
 <br><br>
 
+<<<<<<< HEAD
 
 
 ### 3. 
+=======
+### 3. Control Flow Graph with `mem2reg` pass invoked  (highlight the CM instructions)
+
+<br>
+
+<img src="img/LICM_mem2reg_IR_highlight.png" alt="IR_highlight" width=90%>
+
+<br><br>
+>>>>>>> 6410aa02bcc220579c3f6e9a2ae6c93fa46728a1
 
 ## Algoritmo per la Code Motion
 
