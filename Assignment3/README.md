@@ -71,6 +71,10 @@ int main()
 
 <br><br>
 
+
+
+### 3. 
+
 ## Algoritmo per la Code Motion
 
 • Dato un insieme di nodi in un loop:
