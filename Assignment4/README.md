@@ -4,14 +4,14 @@
 
 • Implementare un passo di Loop Fusion.
 
-## Algoritmo per la Loop Fusion 
-
-//TODO
+## Algoritmo per la Loop Fusion
 
 
-## Rappresentazione grafica del problema
+## CFG del codice IR:
 
-//TODO
+![CFG llvm](./source/CFG_LF.png)
+
+
 
 
 
