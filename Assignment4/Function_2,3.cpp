@@ -1,4 +1,4 @@
-//Funzionante (da come presupposto che sia già stato fatto il controllo di adiacenza)
+//Da come presupposto che sia già stato fatto il controllo di adiacenza)
 bool areControlFlowEquivalent(Loop *L0, Loop *L1, DominatorTree &DT, PostDominatorTree &PDT){
     
     SmallVector<BasicBlock *> L0exitBlocks;
@@ -16,7 +16,7 @@ bool areControlFlowEquivalent(Loop *L0, Loop *L1, DominatorTree &DT, PostDominat
 }
 
 
-// Non funzionante, logicamente corretto.
+
 bool haveSameTripCount(Loop *L0, Loop *L1, ScalarEvolution &SE){
     const SCEV *S1 = SE.getBackedgeTakenCount(L0);
     const SCEV *S2 = SE.getBackedgeTakenCount(L1);
