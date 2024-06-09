@@ -10,8 +10,9 @@
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Pass.h"
-#include "llvm/Transforms/Utils/SSAUpdater.h"
+#include <llvm/Analysis/ScalarEvolutionExpressions.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 using namespace llvm;
 
@@ -30,39 +31,12 @@ bool noNegativeDistanceDependencies(Loop *L1, Loop *L2, DependenceInfo &DI)
     return true;
 }
 
-void replaceInductionVariables2(llvm::Loop *loop1, llvm::Loop *loop2,
-                                llvm::ScalarEvolution &SE)
-{
-
-    // Ottenere le variabili di induzione per entrambi i loop
-    llvm::PHINode *indVar1 = loop1->getCanonicalInductionVariable();
-    llvm::PHINode *indVar2 = loop2->getCanonicalInductionVariable();
-
-    // Controllare se entrambe le variabili di induzione esistono
-    if (!indVar1 || !indVar2)
-    {
-        outs() << "Warning: Uno dei loop non ha variabile di induzione.\n";
-        return;
-    }
-
-    // Sostituire gli usi della variabile di induzione del loop2 con quelli del
-    // loop1
-    indVar2->replaceAllUsesWith(indVar1);
-    outs() << "----------------------------------- ";
-    outs() << "\nvariabili di induzione sostituite! \n";
-}
-
 void replaceInductionVariables(Loop *L1, Loop *L2)
 {
 
     // Ottieni le variabili di induzione per entrambi i loop
     PHINode *indVar1 = L1->getCanonicalInductionVariable();
     PHINode *indVar2 = L2->getCanonicalInductionVariable();
-
-    // TODO: delete when bugfree
-    //   outs() << "\n---------- Variabili di induzione dei loop: ---------- \n";
-    //   outs() << " IndVar1: " << *indVar1 << "\n";
-    //   outs() << " IndVar2: " << *indVar2 << "\n";
 
     // Controlla se entrambe le variabili di induzione esistono
     if (!indVar1 || !indVar2)
@@ -71,19 +45,8 @@ void replaceInductionVariables(Loop *L1, Loop *L2)
         return;
     }
 
-    // TODO: delete when bugfree
-    //   outs() << "\n---------- Usi della variabile di induzione che devo
-    //   cambiare: "
-    //             "---------- \n";
-    //   for (auto &Use : indVar2->uses()) {
-    //     Instruction *User = cast<Instruction>(Use.getUser());
-    //     outs() << "User: " << *User << "\n";
-    //   }
-
     // Sostituisci gli usi della variabile di induzione del loop2 con quelli del
     // loop1
-    outs()
-        << "\n++++++++++ Sostituzione delle variabili di induzione: ++++++++++\n";
     std::vector<Instruction *> users;
     for (auto &Use : indVar2->uses())
     {
@@ -111,19 +74,10 @@ void replaceInductionVariables(Loop *L1, Loop *L2)
         }
     }
 
-    // TODO: delete when bugfree
-    //   outs() << "\n---------- Stampa usi di instVar1 in L2 ----------\n";
-    //   for (auto &Use : indVar1->uses()) {
-    //     Instruction *User = cast<Instruction>(Use.getUser());
-    //     if (L2->contains(User)) {
-    //       outs() << "User: " << *User << "\n";
-    //     }
-    //   }
-
     if (replacementSuccess)
     {
         outs() << "\n---------- Variabili di induzione sostituite con successo "
-                  "----------\n";
+                  "----------\n\n";
     }
     else
     {
@@ -132,136 +86,54 @@ void replaceInductionVariables(Loop *L1, Loop *L2)
     }
 }
 
-void fuseLoops_BK(Loop *L1, Loop *L2, LoopInfo &LI, DominatorTree &DT)
+Loop *fuseLoop(Loop *L1, Loop *L2)
 {
-    BasicBlock *latch1 = L1->getLoopLatch();
-    BasicBlock *latch2 = L2->getLoopLatch();
+    outs() << "Invocato fuse loop definitivo\n";
+
+    // replace the induction variable of the second loop with the one of the first
+    replaceInductionVariables(L1, L2);
+
+    // get the basic blocks of interest necessary for the fusion
     BasicBlock *header1 = L1->getHeader();
-    BasicBlock *header2 = L2->getHeader();
-    BasicBlock *preheader1 = L1->getLoopPreheader();
-    BasicBlock *preheader2 = L2->getLoopPreheader();
-
-    if (!latch1 || !latch2 || !header1 || !header2 || !preheader1 ||
-        !preheader2)
-    {
-        outs() << "Uno dei loop manca di un blocco essenziale.\n";
-        return;
-    }
-
-    // Sostituisci i branch del latch1 e latch2 per la fusione
-    Instruction *inst_latch1 = latch1->getTerminator();
-    if (!inst_latch1)
-    {
-        outs() << "Errore: Il latch1 non ha una singola istruzione terminale.\n";
-    }
-    inst_latch1->replaceUsesOfWith(header1, header2);
-
-    Instruction *inst_latch2 = latch2->getTerminator();
-    if (!inst_latch2)
-    {
-        outs() << "Errore: Il latch2 non ha una singola istruzione terminale.\n";
-    }
-    inst_latch2->replaceUsesOfWith(header2, header1);
-
-    // Nota: Il seguente passaggio sposta il blocchi del body2 dopo il latch1
-    // Importante e fondamentale per fare Loop Fusion (else caso: loop unrolling)
-
-    SmallVector<BasicBlock *, 8> body2Blocks(L2->getBlocks());
-    for (BasicBlock *BB : body2Blocks)
-    {
-        BB->moveAfter(latch1);
-    }
-
-    // Aggiorna LoopInfo
-    for (BasicBlock *BB : body2Blocks)
-    {
-        LI.changeLoopFor(BB, L1);
-    }
-    LI.changeLoopFor(latch2, L1);
-    LI.erase(L2);
-    outs() << "\n\nAggiornamento LoopInfo completato.\n";
-
-    // TODO:
-    // aggiornamento del dominator tree
-
-    outs() << "Tentativo di aggiornamento del dominator tree...\n";
-
-    // Aggiorna DominatorTree
-    DT.eraseNode(header2);
-    outs() << "Nodo header2 rimosso dal dominator tree.\n";
-    DT.eraseNode(latch2);
-    outs() << "Nodi eliminati dal dominator tree.\n";
-}
-
-void fuseLoops(Loop *L1, Loop *L2, LoopInfo &LI, DominatorTree &DT)
-{
-
-    outs() << "\n++++++++++ Inizio fusione dei loop: ++++++++++\n";
-
     BasicBlock *latch1 = L1->getLoopLatch();
-    BasicBlock *latch2 = L2->getLoopLatch();
-    BasicBlock *header1 = L1->getHeader();
+    BasicBlock *body1 = latch1->getSinglePredecessor();
+    BasicBlock *exit1 = L1->getExitBlock();
+
     BasicBlock *header2 = L2->getHeader();
-    BasicBlock *preheader1 = L1->getLoopPreheader();
     BasicBlock *preheader2 = L2->getLoopPreheader();
+    BasicBlock *latch2 = L2->getLoopLatch();
+    BasicBlock *body2 = latch2->getSinglePredecessor();
+    BasicBlock *exit2 = L2->getExitBlock();
 
-    if (!latch1 || !latch2 || !header1 || !header2 || !preheader1 ||
-        !preheader2)
+    // controlliamo quale dei successori del header è il body del loop
+    BasicBlock *body2entry;
+    if (L2->contains(header2->getTerminator()->getSuccessor(0)))
     {
-        errs() << "Uno dei loop manca di un blocco essenziale.\n";
-        return;
+        // successore 0 del branch del header è il body
+        body2entry = header2->getTerminator()->getSuccessor(0);
+    }
+    else
+    {
+        // successore 1 del branch del header è il body
+        body2entry = header2->getTerminator()->getSuccessor(1);
     }
 
-    // Modifica del CFG
-    // Sostituisci i branch del latch1 e latch2 per la fusione
-    Instruction *inst_latch1 = latch1->getTerminator();
-    if (!inst_latch1)
-    {
-        outs() << "Errore: Il latch1 non ha una singola istruzione terminale.\n";
-    }
-    inst_latch1->replaceUsesOfWith(header1, header2);
+    // controlla se preheader2 è uguale all'exit block 1
+    assert(preheader2 == exit1 && "preheader2 is not equal to exit2");
 
-    Instruction *inst_latch2 = latch2->getTerminator();
-    if (!inst_latch2)
-    {
-        outs() << "Errore: Il latch2 non ha una singola istruzione terminale.\n";
-    }
-    inst_latch2->replaceUsesOfWith(header2, header1);
+    // cambia il successor del header1 (caso terminazione loop) a exit block di L2
+    header1->getTerminator()->replaceSuccessorWith(preheader2, exit2);
+    // cambia il successor del body1 a body2
+    body1->getTerminator()->replaceSuccessorWith(latch1, body2entry);
+    // TODO: check
+    // cambia successor del header2 a latch2
+    ReplaceInstWithInst(header2->getTerminator(), BranchInst::Create(latch2));
 
-    // Sposta il body del loop2 dopo il body del loop1
-    SmallVector<BasicBlock *, 8> body2Blocks(L2->getBlocks());
-    for (auto BB = body2Blocks.rbegin(); BB != body2Blocks.rend(); ++BB)
-    {
-        (*BB)->moveAfter(latch1);
-    }
+    // cambia il successor del body2 a latch1 per chiudere il loop
+    body2->getTerminator()->replaceSuccessorWith(latch2, latch1);
 
-    // TODO: this might be wrong, could invert order of blocks
-    //   for (BasicBlock *BB : body2Blocks) {
-    //     BB->moveAfter(latch1);
-    //   }
-
-    outs()
-        << "\n---------- Blocchi del loop2 spostati dopo il latch1 ----------\n";
-
-    // Aggiorna LoopInfo
-    for (BasicBlock *BB : body2Blocks)
-    {
-        LI.changeLoopFor(BB, L1);
-    }
-    LI.erase(L2);
-
-    outs() << "\n---------- Aggiornamento LoopInfo completato ----------\n";
-
-    // Aggiorna DominatorTree
-    DT.recalculate(*header1->getParent());
-
-    outs() << "\n---------- Aggiornamento DominatorTree completato ----------\n";
-
-    // Ora è sicuro rimuovere header2 e latch2.
-    header2->eraseFromParent();
-    latch2->eraseFromParent();
-
-    outs() << "\n---------- Rimozione header2 e latch2 completata ----------\n";
+    // Il loop fuso si troverà in L1
+    return L1;
 }
 
 PreservedAnalyses LoopFusionPass::run(Function &F,
@@ -275,34 +147,42 @@ PreservedAnalyses LoopFusionPass::run(Function &F,
     PostDominatorTree &PDT = AM.getResult<PostDominatorTreeAnalysis>(F);
     DependenceInfo &DI = AM.getResult<DependenceAnalysis>(F);
 
-    std::vector<std::pair<Loop *, Loop *>> fusionCandidates;
+    Loop *prevLoop = nullptr;
+    bool modified = false;
 
-    std::vector<Loop *> loops(LI.begin(), LI.end());
-    for (size_t i = 0; i < loops.size() - 1; ++i)
+    for (auto lit = LI.rbegin(); lit != LI.rend(); ++lit)
     {
-        Loop *L1 = loops[i];
-        Loop *L2 = loops[i + 1];
+        Loop *currLoop = *lit;
 
-        if (areLoopsAdjacent(L1, L2) && haveSameTripCount(L1, L2, SE) &&
-            areControlFlowEquivalent(L1, L2, DT, PDT) &&
-            noNegativeDistanceDependencies(L1, L2, DI) &&
-            L1->isLoopSimplifyForm() && L2->isLoopSimplifyForm())
+        if (prevLoop)
         {
-            outs() << "Trovati loop adiacenti candidati per la fusione! \n";
-            fusionCandidates.push_back(std::make_pair(L1, L2));
-            ++i; // Salta il prossimo loop in quanto è già candidato per la fusion
+            if (areLoopsAdjacent(prevLoop, currLoop) &&
+                haveSameTripCount(prevLoop, currLoop, SE) &&
+                areControlFlowEquivalent(prevLoop, currLoop, DT, PDT) &&
+                noNegativeDistanceDependencies(prevLoop, currLoop, DI) &&
+                prevLoop->isLoopSimplifyForm() && currLoop->isLoopSimplifyForm())
+            {
+                outs() << "Trovati loop adiacenti candidati per la fusione! \n";
+                fuseLoop(prevLoop, currLoop);
+                // fuseLoops2(F, AM, prevLoop, currLoop);
+                //  fuseLoop(prevLoop, currLoop);
+                outs() << "\n---------- Fusione dei loop completata con successo"
+                          "----------\n\n";
+                modified = true;
+                // Salta il prossimo loop in quanto è già stato fuso
+                currLoop = *lit;
+                prevLoop = currLoop;
+                continue;
+            }
         }
+
+        prevLoop = currLoop;
     }
 
-    for (auto &candidate : fusionCandidates)
-    {
-        Loop *L1 = candidate.first;
-        Loop *L2 = candidate.second;
+    outs() << "\nEnd of loop fusion opt...\n";
 
-        replaceInductionVariables(L1, L2);
-        fuseLoops(L1, L2, LI, DT);
-        outs() << "Fusione dei loop completata.\n";
-    }
-    outs() << "End loop fusion opt...\n";
-    return PreservedAnalyses::all();
+    if (modified)
+        return PreservedAnalyses::none();
+    else
+        return PreservedAnalyses::all();
 }
