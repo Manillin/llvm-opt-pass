@@ -2,6 +2,8 @@
 #define LLVM_TRANSFORMS_LOCALOPTS_H
 
 #include "llvm/IR/PassManager.h"
+#include "llvm/Transforms/Utils/Local.h"
+#include <llvm/IR/Constants.h>
 
 namespace llvm
 {

@@ -8,12 +8,14 @@
 #include "llvm/Transforms/Utils/LocalOpts.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
-// L'include seguente va in LocalOpts.h
-#include "llvm/Transforms/Utils/Local.h"
-#include <llvm/IR/Constants.h>
+
 
 using namespace llvm;
 
+ 
+/// @brief Function that find algebric identity. If exists it replace all useless uses.
+/// @param B BasicBlock where you search the algebric identity
+/// @return  True -> if the function made the optimization
 bool algebricIdentity(BasicBlock &B)
 {
 
@@ -39,20 +41,18 @@ bool algebricIdentity(BasicBlock &B)
             //////////////////////ADD/////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // ricorda che l'add si puo fare : add rd,rs1,rs2
 
-            if (Binop->getOpcode() == Instruction::Add)
-            { // controllo che sia una somma
-                outs() << "Trovata istruzione binaria add: " << *Binop << "\n";
+            if (Binop->getOpcode() == Instruction::Add) { // controllo che sia una somma
+                //outs() << "Trovata istruzione binaria add: " << *Binop << "\n";
 
                 // controllo che il primo operando sia 0
                 if (cost1 != NULL && cost1->isZero())
                 {
-                    outs() << "Trovata istruzione addizione con primo operando 0: " << *Binop << "\n";
+                    //outs() << "Trovata istruzione addizione con primo operando 0: " << *Binop << "\n";
                     toDelete.push_back(Binop);
                     Binop->replaceAllUsesWith(op2); // sostituisco tutte le occorrenze di un valore con un altro valore
                 }
-                else if (cost2 != NULL && cost2->isZero())
-                {
-                    outs() << "Trovata istruzione addizione con secondo operando 0: " << *Binop << "\n";
+                else if (cost2 != NULL && cost2->isZero()){
+                    //outs() << "Trovata istruzione addizione con secondo operando 0: " << *Binop << "\n";
                     toDelete.push_back(Binop);
                     Binop->replaceAllUsesWith(op1);
                 }
@@ -63,15 +63,12 @@ bool algebricIdentity(BasicBlock &B)
             if (Binop->getOpcode() == Instruction::Mul)
             { // controllo che sia una moltiplicazione
                 // controllo che il primo o secondo operando sia 1
-                if (cost1 != NULL && cost1->isOne())
-                {
-                    outs() << "Trovata istruzione moltiplicazione con primo operando 1: " << *Binop << "\n";
+                if (cost1 != NULL && cost1->isOne()){
                     toDelete.push_back(Binop);
                     Binop->replaceAllUsesWith(op2);
                 }
-                else if (cost2 != NULL && cost2->isOne())
-                {
-                    outs() << "Trovata istruzione moltiplicazione con secondo operando 1: " << *Binop << "\n";
+                else if (cost2 != NULL && cost2->isOne()){
+                    
                     toDelete.push_back(Binop);
                     Binop->replaceAllUsesWith(op1);
                 }
@@ -80,9 +77,7 @@ bool algebricIdentity(BasicBlock &B)
     }
 
     // Cancellazione di tutte le istruzioni inutili
-    for (auto &element : toDelete)
-    {
-        outs() << "Cancello la seguente istruzione : " << *element << "\n";
+    for (auto &element : toDelete){
         element->eraseFromParent();
     }
 
@@ -96,34 +91,33 @@ bool algebricIdentity(BasicBlock &B)
  * @return unsigned int
  */
 
-unsigned int getBestShiftValue(uint64_t constVal)
-{
+unsigned int getBestShiftValue(uint64_t constVal){
 
     // verifica se potenza di 2:
     APInt apInt(32, constVal);
-    if (apInt.isPowerOf2())
-    {
+    if (apInt.isPowerOf2()){
         return apInt.logBase2();
     }
     // verifica se potenza di due con offset +1
     APInt apIntPlusOne(32, constVal + 1);
-    if (apIntPlusOne.isPowerOf2())
-    {
+    if (apIntPlusOne.isPowerOf2()){
         return apIntPlusOne.logBase2();
     }
     // verifica se potenza di due con differenza di -1
     APInt apIntMinusOne(32, constVal - 1);
-    if (apIntMinusOne.isPowerOf2())
-    {
+    if (apIntMinusOne.isPowerOf2()){
         return apIntMinusOne.logBase2();
     }
 
-    outs() << "Nessuna potenza valida è stata trovata!\n";
     return 0;
 }
 
-bool strengthReduction(Instruction &I)
-{
+
+
+/// @brief   Function that try to do "strength reduction" opt for an instruction. 
+/// @param I Instruction where you search the algebric identity
+/// @return  True -> if the function made the optimization
+bool strengthReduction(Instruction &I) {
     if (auto *BinOp = dyn_cast<BinaryOperator>(&I))
     {
         auto OpCode = BinOp->getOpcode();
@@ -153,7 +147,7 @@ bool strengthReduction(Instruction &I)
         {
             if (!Op1)
             {
-                outs() << "OP1 riferimento nullo\n";
+                //outs() << "OP1 riferimento nullo\n";
                 return false;
             }
             Instruction *shiftLeft =
@@ -162,7 +156,7 @@ bool strengthReduction(Instruction &I)
             // Verifica che shiftLeft sia stato creato correttamente
             if (!shiftLeft)
             {
-                outs() << "Errore: impossibile creare shiftLeft\n";
+                //outs() << "Errore: impossibile creare shiftLeft\n";
                 return false;
             }
             // DBUG: outs() << "shiftLeft:  -> " << *shiftLeft << "\n";
@@ -171,7 +165,7 @@ bool strengthReduction(Instruction &I)
             // calcolo del resto
             int64_t operationRest =
                 static_cast<int64_t>(constInt->getZExtValue()) - (1 << shiftValue);
-            outs() << "Triggered Strenght Reduction on " << I << "\n";
+            //outs() << "Triggered Strenght Reduction on " << I << "\n";
 
             // analisi del resto
             if (operationRest == 0)
@@ -182,14 +176,14 @@ bool strengthReduction(Instruction &I)
             {
                 newInstruction =
                     BinaryOperator::Create(BinaryOperator::Add, shiftLeft, Op1);
-                outs() << "newInstruction: " << *newInstruction << "\n";
+                //outs() << "newInstruction: " << *newInstruction << "\n";
                 newInstruction->insertAfter(shiftLeft);
             }
             else if (operationRest == -1)
             {
                 newInstruction =
                     BinaryOperator::Create(BinaryOperator::Sub, shiftLeft, Op1);
-                outs() << "newInstruction: " << *newInstruction << "\n";
+                //outs() << "newInstruction: " << *newInstruction << "\n";
                 newInstruction->insertAfter(shiftLeft);
             }
             else
@@ -204,7 +198,7 @@ bool strengthReduction(Instruction &I)
             if (constInt->getValue().isPowerOf2())
             {
                 newInstruction = BinaryOperator::Create(Instruction::LShr, Op1, shift);
-                outs() << "newInstruction: " << *newInstruction << "\n";
+                //outs() << "newInstruction: " << *newInstruction << "\n";
                 newInstruction->insertAfter(&I);
             }
         }
@@ -219,16 +213,18 @@ bool strengthReduction(Instruction &I)
     }
 }
 
-Value *findOperator(BasicBlock::iterator sottrazione,
-                    BasicBlock::iterator primaIstruzione, Value *var,
-                    const llvm::APInt costanteSub)
-{
+/// @brief Function that finds the new value of the instruction starting from sub_istr (backwards) 
+/// @param sottrazione  Sub candidate (ex: c=a-1)
+/// @param primaIstruzione  First instruction of basicblock.
+/// @param var Variable in the subtraction(ex:a)
+/// @param costanteSub Constant in the subtraction(ex:1)
+/// @return  new value found
+Value *findOperator(BasicBlock::iterator sottrazione, BasicBlock::iterator primaIstruzione, Value *var, const llvm::APInt costanteSub){
 
     // Itera le istruzioni partendo dalla sottrazione e arriva fino all'inizio (primaIstruzione)
     BasicBlock::iterator it = sottrazione;
     ConstantInt *C0, *C1;
-    do
-    {
+    do{
         if (it == primaIstruzione)
             break;
         it--;
@@ -237,37 +233,22 @@ Value *findOperator(BasicBlock::iterator sottrazione,
         Instruction *instruction = &(*it);
 
         // Controllo se il value dell'operazione che sto analizzando è uguale al value del sottrazione
-        if (sub->getOperand(0) == instruction->getOperand(0) &&
-            sub->getOperand(1) == instruction->getOperand(1))
-        {
-            outs() << "Ho trovato un istruzione con il Value che è un buon candidato "
-                      "( istr : "
-                   << *instruction << " )\n";
+        if (sub->getOperand(0) == instruction->getOperand(0) && sub->getOperand(1) == instruction->getOperand(1)){
+            //outs() << "Ho trovato un istruzione con il Value che è un buon candidato ""( istr : " << *instruction << " )\n";
             C0 = dyn_cast<ConstantInt>(instruction->getOperand(0));
             C1 = dyn_cast<ConstantInt>(instruction->getOperand(1));
-            if (C0 != NULL)
-            {
+            if (C0 != NULL){
                 const llvm::APInt costanteAdd = C0->getValue();
-                outs() << "Costante trovata! : " << costanteAdd << "\n";
-                if (costanteAdd.eq(costanteSub))
-                {
-                    outs() << "Costante uguale a quella della sottrazione!\n";
+                if (costanteAdd.eq(costanteSub)){
+                    //outs() << "Costante uguale a quella della sottrazione!\n";
                     return instruction->getOperand(1);
                 }
-            }
-            else if (C1 != NULL)
-            {
+            }else if (C1 != NULL){
                 const llvm::APInt costanteAdd = C1->getValue();
-                outs() << "Costante trovata! : " << costanteAdd << "\n";
-                if (costanteAdd.eq(costanteSub))
-                {
-                    outs() << "Costante uguale a quella della sottrazione! : \n";
+                if (costanteAdd.eq(costanteSub)){
+                    //outs() << "Costante uguale a quella della sottrazione! : \n";
                     return instruction->getOperand(0);
                 }
-            }
-            else
-            {
-                outs() << "Nessuna costante trovata!\n";
             }
         }
     } while (true);
@@ -275,25 +256,23 @@ Value *findOperator(BasicBlock::iterator sottrazione,
     return NULL;
 }
 
-void multi_instr_opt(BasicBlock &B)
-{
+/// @brief Function that find "multi instructions operations". If exists it replace all useless uses.
+/// @param B  BasicBlock where you search the "multi instructions"
+/// @return  True -> if the function made the optimization
+bool multi_instr_opt(BasicBlock &B){
     unsigned cont = 0;
     std::vector<Instruction *> toDelete;
+    bool opt_done = false;
 
     // Itera tutte le istruzioni
-    for (auto iter_i = B.begin(); iter_i != B.end(); ++iter_i)
-    {
+    for (auto iter_i = B.begin(); iter_i != B.end(); ++iter_i){
         cont++;
         Instruction &I = *iter_i;
 
         // Controllo se l'istruzione è una sottrazione
-        if (I.isBinaryOp() && I.getOpcode() == Instruction::Sub)
-        {
+        if (I.isBinaryOp() && I.getOpcode() == Instruction::Sub){
 
             BinaryOperator *sub = dyn_cast<BinaryOperator>(&I);
-            outs() << "(" << *sub << ")"
-                   << " è una sottrazione\n";
-
             Value *op_0 = sub->getOperand(0);
             Value *op_1 = sub->getOperand(1);
 
@@ -309,68 +288,57 @@ void multi_instr_opt(BasicBlock &B)
             }
 
             // Controllo se ho trovato una costante
-            if (C)
-            {
+            if (C){
                 const llvm::APInt costanteIntera = C->getValue();
-                Value *new_value =
-                    findOperator(iter_i, B.begin(), variabile, costanteIntera);
-                if (new_value)
-                { // Controllo se ho trovato un addizione con le
-                  // caratteristiche desiderate
-                    outs() << "Nuovo valore che devo mettere  c = ... <----- = {"
-                           << *new_value << "} \n";
+                Value *new_value = findOperator(iter_i, B.begin(), variabile, costanteIntera);
+                if (new_value){     // Controllo se ho trovato un addizione con le caratteristiche desiderate
+                    //outs() << "Nuovo valore che devo mettere  c = ... <----- = {"<< *new_value << "} \n";
                     I.replaceAllUsesWith(new_value);
                     toDelete.push_back(&I);
                 }
-                else
-                {
-                    outs() << "Non ho trovato nessuna <Add> con le caratteristiche "
-                              "adatte!\n";
-                }
             }
-            else
-            {
-                outs() << "La seguente sottrazione NON ha una costante intera\n\n";
-            }
-            outs() << "\n\n";
         }
     }
 
     // Cancellazione di tutte le istruzioni inutili
-    for (auto &element : toDelete)
-    {
-        outs() << "Cancello la seguente istruzione : " << *element << "\n";
+    for (auto &element : toDelete){
         element->eraseFromParent();
+        opt_done = true;
     }
 
     // Debug
-    outs() << "\nIstruzioni analizzate : " << cont << "\n";
+    //outs() << "\nIstruzioni analizzate : " << cont << "\n";
+
+    return opt_done;
 }
 
-bool runOnBasicBlock(BasicBlock &B)
-{
+
+
+// Main
+bool runOnBasicBlock(BasicBlock &B){
     // chiama l'ottimizzatore del punto 1
-    algebricIdentity(B);
+    if(algebricIdentity(B))
+        outs()<<"- Algebric Identity ✓ \n";
 
     // ottimizzatore punto 2
+    unsigned count_strengh = 0;
     std::vector<Instruction *> toRemove;
-
-    for (auto &I : B)
-    {
-        if (strengthReduction(I))
-        {
+    for (auto &I : B){
+        if (strengthReduction(I)){
             toRemove.push_back(&I);
+            count_strengh++;
         }
     }
-
     // Rimuovi le istruzioni dopo aver completato il ciclo
-    for (auto *I : toRemove)
-    {
+    for (auto *I : toRemove){
         I->eraseFromParent();
     }
+    if(count_strengh > 0)
+        outs()<<"- Strengh Reduction ✓ ("<<count_strengh<<" volte) \n";
 
     // chiama l'ottimizatore del punto3
-    multi_instr_opt(B);
+    if(multi_instr_opt(B))
+        outs()<<"- Multi Instructions ✓ \n";
 
     return true;
 }
@@ -379,16 +347,16 @@ bool runOnFunction(Function &F)
 {
     bool Transformed = false;
 
-    for (auto Iter = F.begin(); Iter != F.end(); ++Iter)
-    {
-        if (runOnBasicBlock(*Iter))
-        {
+    // Try to optimaze each BasicBlock of the function
+    for (auto Iter = F.begin(); Iter != F.end(); ++Iter){
+        if (runOnBasicBlock(*Iter)){
             Transformed = true;
         }
     }
-
     return Transformed;
 }
+
+
 
 PreservedAnalyses LocalOpts::run(Module &M, ModuleAnalysisManager &AM)
 {
@@ -398,3 +366,4 @@ PreservedAnalyses LocalOpts::run(Module &M, ModuleAnalysisManager &AM)
 
     return PreservedAnalyses::all();
 }
+
