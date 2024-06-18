@@ -16,19 +16,138 @@
 
 using namespace llvm;
 
-bool areLoopsAdjacent(Loop *L1, Loop *L2) { return true; }
+bool areLoopsAdjacent(const Loop *L1, const Loop *L2)
+{
+    // Controllo se i due loop sono nulli
+    if (!L1 || !L2)
+    {
+        return false;
+    }
+    outs() << "\n";
 
-bool haveSameTripCount(Loop *L1, Loop *L2, ScalarEvolution &SE) { return true; }
+    // nel preheader del loop L1 c'è un branch che va al preheader del loop L2
+    if (L1->isGuarded())
+    {
+        outs() << "\n> L1 è guarded\n";
+        BasicBlock *L1preheader = L1->getLoopPreheader();
+        // prendo l'ultimo istruzione del preheader del loop L1
+        Instruction *L1preheaderTerminator = L1preheader->getTerminator();
+        // controllo se l'istruzione è un branch
+        if (BranchInst *L1preheaderBranch =
+                dyn_cast<BranchInst>(L1preheaderTerminator))
+        {
+            // controllo se il branch ha due operandi
+            if (L1preheaderBranch->getNumSuccessors() == 2)
+            {
+                // prendo il secondo operando del branch
+                BasicBlock *L1preheaderBranchSuccessor1 =
+                    L1preheaderBranch->getSuccessor(0);
+                BasicBlock *L1preheaderBranchSuccessor2 =
+                    L1preheaderBranch->getSuccessor(1);
+
+                if (L1preheaderBranchSuccessor1 == L2->getHeader() ||
+                    L1preheaderBranchSuccessor2 == L2->getHeader())
+                {
+                    outs() << "\n> Adiacenti! \n";
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // non Guarded
+    if (!L1->isGuarded())
+    {
+        outs() << "> L1 non è guarded\n";
+        SmallVector<BasicBlock *> L1exitBlocks;
+        // prendo tutti gli exit block del loop e li metto in un vettore
+        L1->getExitBlocks(L1exitBlocks);
+        // controllo se il preheader del loop L2 è diverso all'exit block del loop
+        // L1, nel caso in cui sia diverso ritorno false vado a controllare che
+        // tutte le uscite convergono verso un unico punto s
+        for (BasicBlock *exitingblock : L1exitBlocks)
+        {
+            if (exitingblock != L2->getLoopPreheader())
+            {
+                return false;
+            }
+        }
+        outs() << "> Adiacenti! \n";
+        return true;
+    }
+}
+
+bool haveSameTripCount(Loop *L1, Loop *L2, ScalarEvolution &SE)
+{
+    const SCEV *S1 = SE.getBackedgeTakenCount(L1);
+    const SCEV *S2 = SE.getBackedgeTakenCount(L2);
+
+    if (S1 == S2)
+    {
+        outs() << "> I 2 loop hanno lo stesso numero di iterazioni!\n";
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 
 bool areControlFlowEquivalent(Loop *L1, Loop *L2, DominatorTree &DT,
                               PostDominatorTree &PDT)
 {
+
+    SmallVector<BasicBlock *> L1exitBlocks;
+    L1->getExitBlocks(L1exitBlocks);
+
+    for (BasicBlock *exitBlock : L1exitBlocks)
+    {
+        BasicBlock *nextBB = exitBlock->getTerminator()->getSuccessor(0);
+        int n_succ = exitBlock->getTerminator()->getNumSuccessors();
+        if (n_succ > 0 && !DT.dominates(exitBlock, nextBB) &&
+            !PDT.dominates(nextBB, exitBlock))
+        {
+            return false;
+        }
+    }
+    outs() << "> Control Flow equivalent! \n";
     return true;
 }
 
-bool noNegativeDistanceDependencies(Loop *L1, Loop *L2, DependenceInfo &DI)
+bool hasNegativeDependencies(Loop *L1, Loop *L2, DependenceInfo &DI)
 {
-    return true;
+    // Itera attraverso tutti i basic blocks del loop L1
+    for (auto *BB1 : L1->blocks())
+    {
+        // Itera attraverso tutte le istruzioni di BB1
+        for (auto &I1 : *BB1)
+        {
+            // Itera attraverso tutti i basic blocks del loop L2
+            for (auto *BB2 : L2->blocks())
+            {
+                // Itera attraverso tutte le istruzioni di BB2
+                for (auto &I2 : *BB2)
+                {
+                    // Ottieni l'informazione di dipendenza tra le istruzioni I1 e I2
+                    auto D = DI.depends(&I1, &I2, true);
+                    // Se c'è una dipendenza
+                    if (D)
+                    {
+                        // Se la dipendenza è di distanza negativa
+                        // isDirectionNegative() restituisce true se la dipendenza è di
+                        // distanza negativa
+                        if (D->isDirectionNegative())
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    outs() << "> Nessuna dipendenza di distanza negativa trovata! \n";
+    return false; // Nessuna dipendenza di distanza negativa trovata
 }
 
 void replaceInductionVariables(Loop *L1, Loop *L2)
@@ -139,6 +258,7 @@ Loop *fuseLoop(Loop *L1, Loop *L2)
 PreservedAnalyses LoopFusionPass::run(Function &F,
                                       FunctionAnalysisManager &AM)
 {
+    outs() << "\n";
     outs() << "\nStart loop fusion opt...\n";
 
     LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
@@ -147,39 +267,37 @@ PreservedAnalyses LoopFusionPass::run(Function &F,
     PostDominatorTree &PDT = AM.getResult<PostDominatorTreeAnalysis>(F);
     DependenceInfo &DI = AM.getResult<DependenceAnalysis>(F);
 
-    Loop *prevLoop = nullptr;
+    // L1 -> previousLoop ; L2 -> currentLoop
+    Loop *L1 = nullptr;
     bool modified = false;
 
     for (auto lit = LI.rbegin(); lit != LI.rend(); ++lit)
     {
-        Loop *currLoop = *lit;
+        Loop *L2 = *lit;
 
-        if (prevLoop)
+        if (L1)
         {
-            if (areLoopsAdjacent(prevLoop, currLoop) &&
-                haveSameTripCount(prevLoop, currLoop, SE) &&
-                areControlFlowEquivalent(prevLoop, currLoop, DT, PDT) &&
-                noNegativeDistanceDependencies(prevLoop, currLoop, DI) &&
-                prevLoop->isLoopSimplifyForm() && currLoop->isLoopSimplifyForm())
+            if (areLoopsAdjacent(L1, L2) && haveSameTripCount(L1, L2, SE) &&
+                areControlFlowEquivalent(L1, L2, DT, PDT) &&
+                !hasNegativeDependencies(L1, L2, DI) && L1->isLoopSimplifyForm() &&
+                L2->isLoopSimplifyForm())
             {
                 outs() << "Trovati loop adiacenti candidati per la fusione! \n";
-                fuseLoop(prevLoop, currLoop);
-                // fuseLoops2(F, AM, prevLoop, currLoop);
-                //  fuseLoop(prevLoop, currLoop);
+                fuseLoop(L1, L2);
                 outs() << "\n---------- Fusione dei loop completata con successo"
                           "----------\n\n";
                 modified = true;
                 // Salta il prossimo loop in quanto è già stato fuso
-                currLoop = *lit;
-                prevLoop = currLoop;
+                L2 = *lit;
+                L1 = L2;
                 continue;
             }
         }
 
-        prevLoop = currLoop;
+        L1 = L2;
     }
 
-    outs() << "\nEnd of loop fusion opt...\n";
+    outs() << "\nend of loop fusion opt...\n";
 
     if (modified)
         return PreservedAnalyses::none();
