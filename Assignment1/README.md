@@ -96,18 +96,18 @@ define i32 @testSR(i32 noundef %0) {
 𝑐 = 𝑎 − 1    ⇒    𝑐 = 𝑏
 ```
 
-_IR iniziale:_
+_C++ sorgente iniziale:_
 
 ```c++
-; C++ - programm
-; b = 1+1
-; a = b + 1
-; c = a-1
-; d = c * 4
-; e = c + 3
-; return e
-; ...
+b = 1 + 1
+a = b + 1
+c = a - 1
+d = c * 4
+e = c + 3
+return e;
 ```
+
+_IR iniziale:_
 
 ```llvm
 define dso_local i32 @foo(i32 noundef %0, i32 noundef %1) {
