@@ -1,3 +1,7 @@
+# Creazione del CFG del codice IR prima e dopo la fusione dei loop e applicazione del passo di fusione
+
+# Assicurarsi di avere $ROOT come root directory di llvm 
+
 cd $ROOT
 
 FILENAME="loopFusion"
