@@ -24,64 +24,37 @@ using namespace llvm;
  * @return true
  * @return false
  */
-
-bool areLoopsAdjacent(const Loop *L1, const Loop *L2)
+bool areLoopsAdjacent(Loop *l1, Loop *l2)
 {
-    // Controllo esistenza loop
-    if (!L1 || !L2)
-    {
-        return false;
-    }
-    outs() << "\n";
+    // uso un vettore per mettere tutti i blocchi di uscita del primo loop
+    SmallVector<BasicBlock *, 4> exitblock;
 
-    // nel preheader del loop L1 c'è un branch che va al preheader del loop L2
-    if (L1->isGuarded())
+    // Ottengo un elenco di bloccdhi di uscita unici che non solo il latch block del loop.
+    // utile per evitare di considerare come exit block il latch.
+    l1->getUniqueNonLatchExitBlocks(exitblock);
+
+    for (BasicBlock *BB : exitblock)
     {
-        outs() << "\n> L1 è guarded\n";
-        BasicBlock *L1preheader = L1->getLoopPreheader();
-        // prendo l'ultimo istruzione del preheader del loop L1
-        Instruction *L1preheaderTerminator = L1preheader->getTerminator();
-        // controllo se l'istruzione è un branch
-        if (BranchInst *L1preheaderBranch =
-                dyn_cast<BranchInst>(L1preheaderTerminator))
+
+        // controllo prima se il secondo loop è guarded
+        if (l2->isGuarded() &&
+            BB != dyn_cast<BasicBlock>(l2->getLoopGuardBranch()))
         {
-            if (L1preheaderBranch->getNumSuccessors() == 2)
-            {
-                BasicBlock *L1preheaderBranchSuccessor1 =
-                    L1preheaderBranch->getSuccessor(0);
-                BasicBlock *L1preheaderBranchSuccessor2 =
-                    L1preheaderBranch->getSuccessor(1);
-
-                if (L1preheaderBranchSuccessor1 == L2->getHeader() ||
-                    L1preheaderBranchSuccessor2 == L2->getHeader())
-                {
-                    outs() << "\n> Adiacenti! \n";
-                    return true;
-                }
-            }
+            outs() << "L2 è Guarded, ma l'exit block di L1 "
+                      "non è il blocco di guardia del secondo loop";
+            return false;
         }
-        return false;
-    }
 
-    // non Guarded
-    if (!L1->isGuarded())
-    {
-        outs() << "> L1 non è guarded\n";
-        SmallVector<BasicBlock *> L1exitBlocks;
-        // prendo tutti gli exit block del loop e li metto in un vettore
-        L1->getExitBlocks(L1exitBlocks);
-        // controllo se il preheader del loop L2 è diverso all'exit block del loop
-        // L1, se diverso ritorno false
-        for (BasicBlock *exitingblock : L1exitBlocks)
+        if (BB != l2->getLoopPreheader())
         {
-            if (exitingblock != L2->getLoopPreheader())
-            {
-                return false;
-            }
+            outs() << "L2 non Guarded, ma l'exit block di L1 "
+                      "non è il preheader del secondo loop";
+            return false;
         }
-        outs() << "> Adiacenti! \n";
-        return true;
     }
+    // controllati tutti gli exit block posso confermare la condizione di adiacenza!
+    outs() << "\n> Adiacenti! \n";
+    return true;
 }
 
 /**
