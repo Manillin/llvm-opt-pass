@@ -14,13 +14,11 @@ using namespace llvm;
  *
  */
 void move_to_preheader(Loop *L,
-                       std::set<Instruction *> &loop_invariant_instructions)
-{
+                       std::set<Instruction *> &loop_invariant_instructions) {
   BasicBlock *preheader = L->getLoopPreheader();
   Instruction *terminator = preheader->getTerminator();
 
-  for (Instruction *inst : loop_invariant_instructions)
-  {
+  for (Instruction *inst : loop_invariant_instructions) {
     inst->moveBefore(terminator);
   }
 
@@ -31,15 +29,11 @@ void move_to_preheader(Loop *L,
  * @brief Controlla se un operando è definito fuori dal loop
  *
  */
-bool isDefinedOutside(Value *Operand, Loop &L)
-{
+bool isDefinedOutside(Value *Operand, Loop &L) {
   Instruction *I_temp = dyn_cast<Instruction>(Operand);
-  if (I_temp != NULL)
-  {
+  if (I_temp != NULL) {
     return !(L.contains(I_temp->getParent()));
-  }
-  else
-  {
+  } else {
     return false;
   }
 }
@@ -48,14 +42,10 @@ bool isDefinedOutside(Value *Operand, Loop &L)
  * @brief Controlla se l'operando è una costante
  *
  */
-bool isCostant(Value *Operand)
-{
-  if (ConstantInt *C = dyn_cast<ConstantInt>(Operand))
-  {
+bool isCostant(Value *Operand) {
+  if (ConstantInt *C = dyn_cast<ConstantInt>(Operand)) {
     return true;
-  }
-  else
-  {
+  } else {
     return false;
   }
 }
@@ -66,8 +56,7 @@ bool isCostant(Value *Operand)
  */
 bool isLoopInvariantCandidate(
     Value *Operand, Loop &L,
-    std::set<Instruction *> loop_invariant_instructions)
-{
+    std::set<Instruction *> loop_invariant_instructions) {
   Instruction *I_link = dyn_cast<Instruction>(Operand);
   return (isCostant(Operand) || isDefinedOutside(Operand, L) ||
           (I_link != NULL && (loop_invariant_instructions.count(I_link) > 0)) ||
@@ -77,20 +66,14 @@ bool isLoopInvariantCandidate(
 /**
  * @brief Trova tutti i blocchi di uscita dal CFG del loop
  */
-std::set<BasicBlock *> find_exit_blocks(Loop &L)
-{
+std::set<BasicBlock *> find_exit_blocks(Loop &L) {
   std::set<BasicBlock *> exit_blocks;
-  for (BasicBlock *BB : L.blocks())
-  {
-    for (Instruction &I : *BB)
-    {
-      if (BranchInst *BI = dyn_cast<BranchInst>(&I))
-      {
-        for (unsigned i = 0; i < BI->getNumSuccessors(); ++i)
-        {
+  for (BasicBlock *BB : L.blocks()) {
+    for (Instruction &I : *BB) {
+      if (BranchInst *BI = dyn_cast<BranchInst>(&I)) {
+        for (unsigned i = 0; i < BI->getNumSuccessors(); ++i) {
           BasicBlock *succ = BI->getSuccessor(i);
-          if (!L.contains(succ))
-          {
+          if (!L.contains(succ)) {
             exit_blocks.insert(succ);
           }
         }
@@ -106,25 +89,20 @@ std::set<BasicBlock *> find_exit_blocks(Loop &L)
  *
  * @return std::set<BasicBlock *> -> set di blocchi che dominano tutte le uscite
  */
-std::set<BasicBlock *> find_exit_dominators(DominatorTree &DT, Loop &L)
-{
+std::set<BasicBlock *> find_exit_dominators(DominatorTree &DT, Loop &L) {
   std::set<BasicBlock *> exit_blocks = find_exit_blocks(L);
   std::set<BasicBlock *> exit_dominators;
 
-  for (BasicBlock *BB : L.blocks())
-  {
+  for (BasicBlock *BB : L.blocks()) {
     bool dominates_all_exits = true;
 
-    for (BasicBlock *exitBlock : exit_blocks)
-    {
-      if (!DT.dominates(BB, exitBlock))
-      {
+    for (BasicBlock *exitBlock : exit_blocks) {
+      if (!DT.dominates(BB, exitBlock)) {
         dominates_all_exits = false;
         break;
       }
     }
-    if (dominates_all_exits)
-    {
+    if (dominates_all_exits) {
       exit_dominators.insert(BB);
     }
   }
@@ -137,36 +115,26 @@ std::set<BasicBlock *> find_exit_dominators(DominatorTree &DT, Loop &L)
  *
  */
 bool instruction_dominates_all_uses(Instruction *I, DominatorTree &DT,
-                                    Loop &L)
-{
-  for (User *U : I->users())
-  {
-    if (Instruction *userInst = dyn_cast<Instruction>(U))
-    {
+                                    Loop &L) {
+  for (User *U : I->users()) {
+    if (Instruction *userInst = dyn_cast<Instruction>(U)) {
 
       // Handling speciale per nodi PHI:
-      if (PHINode *phiNode = dyn_cast<PHINode>(userInst))
-      {
-        for (unsigned i = 0; i < phiNode->getNumIncomingValues(); ++i)
-        {
+      if (PHINode *phiNode = dyn_cast<PHINode>(userInst)) {
+        for (unsigned i = 0; i < phiNode->getNumIncomingValues(); ++i) {
           // Valutiamo solo casi che contribuiscono al nodo PHI che sono uguali
           // all'istruzione soggetta al controllo della dominanza:
-          if (phiNode->getIncomingValue(i) == I)
-          {
+          if (phiNode->getIncomingValue(i) == I) {
             BasicBlock *incomingBlock = phiNode->getIncomingBlock(i);
-            if (!DT.dominates(I->getParent(), incomingBlock))
-            {
+            if (!DT.dominates(I->getParent(), incomingBlock)) {
               return false;
             }
           }
         }
-      }
-      else
-      {
+      } else {
 
         // Istruzione Normale
-        if (L.contains(userInst->getParent()) && !DT.dominates(I, userInst))
-        {
+        if (L.contains(userInst->getParent()) && !DT.dominates(I, userInst)) {
           return false;
         }
       }
@@ -210,13 +178,10 @@ bool instruction_dominates_all_uses(Instruction *I, DominatorTree &DT,
  * @brief Verifica se un'istruzione è dead code
  *
  */
-bool is_dead(Instruction *I, Loop &L)
-{
-  for (User *U : I->users())
-  {
+bool is_dead(Instruction *I, Loop &L) {
+  for (User *U : I->users()) {
     Instruction *userInst = dyn_cast<Instruction>(U);
-    if (userInst && !L.contains(userInst->getParent()))
-    {
+    if (userInst && !L.contains(userInst->getParent())) {
       return false;
     }
   }
@@ -225,22 +190,19 @@ bool is_dead(Instruction *I, Loop &L)
 
 PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
                                 LoopStandardAnalysisResults &LAR,
-                                LPMUpdater &LU)
-{
+                                LPMUpdater &LU) {
 
   outs() << "Starting loop programm: \n\n";
 
   std::set<Instruction *> loop_invariant_instructions;
   std::set<Instruction *> code_motion_instructions;
 
-  if (!L.isLoopSimplifyForm())
-  {
+  if (!L.isLoopSimplifyForm()) {
     outs() << "\n il Loop non è in forma normale \n";
     return PreservedAnalyses::all();
   }
   BasicBlock *preheader = L.getLoopPreheader();
-  if (!preheader)
-  {
+  if (!preheader) {
     errs() << "Il loop NON ha un Preheader!\n";
     return PreservedAnalyses::all();
   }
@@ -248,23 +210,17 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
   outs() << "\n\t\t------- Starting LICM -------\n";
 
   // Itera su tutte le istruzioni del loop e verifica se sono invarianti
-  for (auto BI = L.block_begin(); BI != L.block_end(); ++BI)
-  {
+  for (auto BI = L.block_begin(); BI != L.block_end(); ++BI) {
     BasicBlock &BB = **BI;
-    for (auto &I : BB)
-    {
+    for (auto &I : BB) {
       bool isLoopInvariant = true;
       PHINode *phi_node = dyn_cast<PHINode>(&I);
 
       // Se l'istruzione è un nodo PHI, non è loop invariant
-      if (phi_node)
-      {
+      if (phi_node) {
         isLoopInvariant = false;
-      }
-      else
-      {
-        for (auto *Iter = I.op_begin(); Iter != I.op_end(); ++Iter)
-        {
+      } else {
+        for (auto *Iter = I.op_begin(); Iter != I.op_end(); ++Iter) {
           Value *Operand = *Iter;
           if (!isLoopInvariantCandidate(Operand, L,
                                         loop_invariant_instructions))
@@ -272,8 +228,7 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
         }
       }
 
-      if (isLoopInvariant == true)
-      {
+      if (isLoopInvariant == true) {
         loop_invariant_instructions.insert(&I);
       }
     }
@@ -292,18 +247,13 @@ PreservedAnalyses LoopWalk::run(Loop &L, LoopAnalysisManager &LAM,
    * @brief Inserimento delle istruzioni candidate alla code motion nella
    * rispettiva struttura dati
    */
-  for (Instruction *inst : loop_invariant_instructions)
-  {
+  for (Instruction *inst : loop_invariant_instructions) {
     BasicBlock *inst_bb = inst->getParent();
-    if (exit_dominators.count(inst_bb))
-    {
-      if (instruction_dominates_all_uses(inst, DT, L))
-      {
+    if (exit_dominators.count(inst_bb)) {
+      if (instruction_dominates_all_uses(inst, DT, L)) {
         code_motion_instructions.insert(inst);
       }
-    }
-    else if (is_dead(inst, L))
-    {
+    } else if (is_dead(inst, L)) {
       code_motion_instructions.insert(inst);
     }
   }
