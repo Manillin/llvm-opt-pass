@@ -16,6 +16,18 @@
 
 using namespace llvm;
 
+
+
+void testfunction(){
+    outs() << "Test function\n";
+    for(int i = 0; i < 5; i++){
+        outs()<< " \n";
+    }
+
+    return;
+}
+
+
 /**
  * @brief Verifica di adiacenza di due Loop
  * Si distingue il caso in cui il loop sia guarded da quello non guarded.
@@ -328,6 +340,10 @@ PreservedAnalyses LoopFusionPass::run(Function &F,
     }
 
     outs() << "\nend of loop fusion opt...\n";
+
+
+    
+
 
     if (modified)
         return PreservedAnalyses::none();
