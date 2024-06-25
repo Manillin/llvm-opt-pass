@@ -16,7 +16,7 @@ A loop is a subset of nodes from the control-flow graph (CFG; where nodes repres
 
 ## Terminology
 
-<img src="source/terminology.png" alt="terminology" width=30%></img>
+<img src="img/terminology.png" alt="terminology" width=30%></img>
 
 1. An <b>entering block</b> (or loop predecessor) is a non-loop node that has an edge into the loop (necessarily the header). If there is only one entering block, and its only edge is to the header, it is also called the loop’s preheader. The preheader dominates the loop without itself being part of the loop.
 
@@ -35,15 +35,15 @@ A loop is a subset of nodes from the control-flow graph (CFG; where nodes repres
 
 - The smallest loop consists of a <b>single basic block</b> that branches to itself.
 
-    <img src="source/smallestLoop.png" alt="smallest loop" width=30%></img>
+    <img src="img/smallestLoop.png" alt="smallest loop" width=30%></img>
 
 - Nested Loop: 
 
-    <img src="source/nestedLoop.png" alt="nested loop" width=30%></img>
+    <img src="img/nestedLoop.png" alt="nested loop" width=30%></img>
 
 - The number of executions of the loop header before leaving the loop is the <b>loop trip count</b> (or iteration count). If the loop should not be executed at all, a <b>loop guard</b> must skip the entire loop:
     
-    <img src="source/guard.png" alt="nested loop" width=30%></img>
+    <img src="img/guard.png" alt="nested loop" width=30%></img>
 
 
 ## Loop Simplify Form
@@ -56,13 +56,53 @@ The <b>Loop Simplify Form</b> is a canonical form that makes several analyses an
 
 - Dedicated exits. That is, no exit block for the loop has a predecessor that is outside the loop. This implies that all exit blocks are dominated by the loop header.
 
+<br><br>
 
 ## Algoritmo per la Loop Fusion
 
+### 1.Check the following condition (❔)
 
-## CFG del codice IR:
+In order for two loops, Lj and Lk to be fused, they must satisfy the following conditions:
 
-![CFG llvm](./source/CFG_LF.png)
+1. Lj and Lk must be <b>adjacent</b><br>
+• There cannot be any statements that execute between the end of Lj and the beginning of Lk
+
+2. Lj and Lk must <b>iterate the same number of times</b>.
+   
+3. Lj and Lk must be <b>control flow equivalent</b>:<br>
+• When Lj executes Lk also executes or when Lk executes Lj also executes
+
+4. There cannot be any <b>negative distance dependencies</b> between Lj and Lk:<br>
+• A negative distance dependence occurs between Lj and Lk, Lj before Lk, 
+when at iteration m from Lk uses a value that is computed by Lj at a future 
+iteration m+n (where n > 0).
+
+### 2.Code transformation (⚙️)
+
+1. Modify uses of induction variable
+2. Modify CFG (body of the second loop must be connected with the body of the first loop).
+
+<br><br>
+
+## CFG comparing
+
+<table>
+<tr>
+    <td><center><h3>CFG - Iniziale </center></td>
+    <td><center><h3>CFG - Finale   </center></td>
+</tr>
+<tr>
+    <td><img src="img/CFG_iniziale.png" alt="starting IR codes" style="height: 800px; width: 700px;"></td>
+    <td><img src="img/CFG_postFusione.png" alt="optimized IR codes" style="height: 800px; width: 1050px;"></td>
+</tr>
+</table>
+
+
+
+
+
+
+
 
 
 
