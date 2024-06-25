@@ -79,8 +79,14 @@ iteration m+n (where n > 0).
 
 ### 2.Code transformation (⚙️)
 
-1. Modify uses of induction variable
-2. Modify CFG (body of the second loop must be connected with the body of the first loop).
+<img src="img/trasformation.png" alt="trasformation" width=30%><br>
+
+1.Modify uses of induction variable. Induction variable of Loop2 became the induction variable of Loop1.<br>
+   `(for i=0 ; i<N ; i++)`  -> <b>i=0</b> is the induction variable. 
+<br><br>
+2.Modify CFG (body of the second loop must be connected with the body of the first loop).
+
+
 
 <br><br>
 
