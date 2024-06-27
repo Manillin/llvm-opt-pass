@@ -53,7 +53,7 @@ while (Changes to any out[] occur):
 
 ### Iterations
 
-⚬ From Iteration1 to Iteration2 there are no difference
+⚬ From Iteration1 to Iteration2 there are no differences
 
 |            | Iterazione1 | Iterazione1 |   | Iterazione2 | Iterazione2 |
 |:----------:|:-----------:|:-----------:|:---:|:-----------:|:-----------:|
